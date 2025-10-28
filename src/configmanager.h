@@ -4,7 +4,52 @@
 #ifndef FS_CONFIGMANAGER_H
 #define FS_CONFIGMANAGER_H
 
+#include <array>
+#include <cstdint>
+#include <string>
+#include <string_view>
+#include <vector>
+
 namespace ConfigManager {
+
+        enum class EvolutionItemCategory : uint8_t {
+                MELEE,
+                DISTANCE,
+                SHIELD,
+                ARMOR,
+                WAND,
+                LAST
+        };
+
+        struct EvolutionStageConfig {
+                uint32_t xpRequired = 0;
+                int32_t attackBonus = 0;
+                int32_t defenseBonus = 0;
+                int32_t extraDefenseBonus = 0;
+                int32_t armorBonus = 0;
+                int32_t wandMinBonus = 0;
+                int32_t wandMaxBonus = 0;
+        };
+
+        struct EvolutionCategoryConfig {
+                uint32_t xpPerUse = 0;
+                std::vector<EvolutionStageConfig> stages;
+                std::vector<std::string> baseNames;
+        };
+
+        struct EvolutionNameConfig {
+                std::array<std::vector<std::string>, static_cast<size_t>(EvolutionItemCategory::LAST)> corrupted;
+                std::vector<std::string> prefixes;
+                std::vector<std::string> suffixes;
+                std::vector<std::string> tierNames;
+                std::vector<std::string> materials;
+        };
+
+        struct WeaponEvolutionConfig {
+                bool enabled = false;
+                std::array<EvolutionCategoryConfig, static_cast<size_t>(EvolutionItemCategory::LAST)> categories;
+                EvolutionNameConfig names;
+        };
 
 	enum boolean_config_t {
 		ALLOW_CHANGEOUTFIT,
@@ -127,7 +172,9 @@ namespace ConfigManager {
 	const std::string& getString(string_config_t what);
 	int32_t getNumber(integer_config_t what);
 	bool getBoolean(boolean_config_t what);
-	float getExperienceStage(uint32_t level);
+        float getExperienceStage(uint32_t level);
+
+        const WeaponEvolutionConfig& getWeaponEvolutionConfig();
 
 	bool setString(string_config_t what, std::string_view value);
 	bool setNumber(integer_config_t what, int32_t value);

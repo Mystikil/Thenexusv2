@@ -180,3 +180,101 @@ ownerName = ""
 ownerEmail = ""
 url = "https://otland.net/"
 location = "Sweden"
+
+weaponEvolution = {
+        enabled = true,
+        xpPerUse = {
+                melee = 15,
+                distance = 15,
+                wand = 18,
+                shield = 12,
+                armor = 10,
+        },
+        stages = {
+                melee = {
+                        { xp = 0, attack = 0, extraDefense = 0 },
+                        { xp = 120, attack = 1 },
+                        { xp = 360, attack = 2, extraDefense = 1 },
+                        { xp = 720, attack = 3, extraDefense = 1 },
+                        { xp = 1200, attack = 4, extraDefense = 2 },
+                        { xp = 1800, attack = 5, extraDefense = 2 },
+                },
+                distance = {
+                        { xp = 0, attack = 0 },
+                        { xp = 150, attack = 1 },
+                        { xp = 420, attack = 2 },
+                        { xp = 780, attack = 3 },
+                        { xp = 1300, attack = 4 },
+                        { xp = 1900, attack = 5 },
+                },
+                wand = {
+                        { xp = 0, minMagic = 0, maxMagic = 0 },
+                        { xp = 160, minMagic = 2, maxMagic = 3 },
+                        { xp = 480, minMagic = 4, maxMagic = 6 },
+                        { xp = 920, minMagic = 6, maxMagic = 9 },
+                        { xp = 1500, minMagic = 8, maxMagic = 12 },
+                        { xp = 2200, minMagic = 10, maxMagic = 15 },
+                },
+                shield = {
+                        { xp = 0, defense = 0, extraDefense = 0 },
+                        { xp = 150, defense = 1 },
+                        { xp = 420, defense = 2, extraDefense = 1 },
+                        { xp = 780, defense = 3, extraDefense = 1 },
+                        { xp = 1300, defense = 4, extraDefense = 2 },
+                        { xp = 2000, defense = 5, extraDefense = 3 },
+                },
+                armor = {
+                        { xp = 0, armor = 0 },
+                        { xp = 200, armor = 1 },
+                        { xp = 520, armor = 2 },
+                        { xp = 940, armor = 3 },
+                        { xp = 1500, armor = 4 },
+                        { xp = 2200, armor = 5 },
+                },
+        },
+        names = {
+                melee = {
+                        "Ironborn", "Stormcleaver", "Ashrend", "Wyrmcleaver", "Bloodforged", "Thornbrand",
+                        "Emberedge", "Stonebiter", "Voidshard", "Soulpiercer", "Nightbane", "Runesteel"
+                },
+                distance = {
+                        "Ironborn", "Stormcleaver", "Ashrend", "Wyrmcleaver", "Bloodforged", "Thornbrand",
+                        "Emberedge", "Stonebiter", "Voidshard", "Soulpiercer", "Nightbane", "Runesteel"
+                },
+                shield = {
+                        "Hearthguard", "Stoneward", "Bastionplate", "Aegisborne", "Ironveil", "Skybarrier",
+                        "Bloodrest", "Frostbuckler", "Sentinel's Hold", "Riftshield", "Oakward", "Crystalbrace"
+                },
+                armor = {
+                        "Ironweld", "Gloommail", "Sunforged Hauberk", "Graveplate", "Stormwoven", "Embermail",
+                        "Lifebound Cuirass", "Runic Shell", "Boneguard", "Voidscale", "Titanhide", "Mooncase"
+                },
+                wand = {
+                        "Whisperstaff", "Manabloom Rod", "Ashwood Wand", "Arcanebone Scepter", "Starspindle", "Veilstaff",
+                        "Soulroot Rod", "Stormflame Wand", "Hexvine Staff", "Luminbar", "Riftrod", "Echo Scepter"
+                },
+                prefixes = {
+                        "Lesser", "Tempered", "Veteran", "Warded", "Charged", "Corroded",
+                        "Blessed", "Cursed", "Primal", "Ascended", "Bound", "Fragmented"
+                },
+                suffixes = {
+                        "of Echoes", "of the Fallen", "of Renewal", "of Hunger", "of the Phoenix", "of the Deep",
+                        "of Wither", "of Resonance", "of Binding", "of the Ancients", "of Endless Strikes", "of Sustenance"
+                },
+                tiers = {
+                        "Initiate", "Temper", "Warden", "Awakened", "Ascendant", "Transcendent",
+                        "Lamented", "Singular", "Eternal", "Primordial"
+                },
+                materials = {
+                        "Oaken", "Obsidian", "Starforged", "Steel-veined", "Mooniron",
+                        "Soulglass", "Embersteel", "Frostcore", "Deepstone", "Suniron"
+                },
+                corrupted = {
+                        melee = { "Blightforged", "Rotcleave", "Sundered Wyrm", "Hollowbrand", "Malignant Edge" },
+                        distance = { "Blightforged", "Rotcleave", "Sundered Wyrm", "Hollowbrand", "Malignant Edge" },
+                        shield = { "Heartrot Shield" },
+                        armor = { "Fractured Boneguard", "Dreadwoven", "Netherplate" },
+                        wand = { "Blackened Rod" }
+                }
+        }
+}

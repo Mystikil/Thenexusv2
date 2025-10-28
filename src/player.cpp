@@ -5,6 +5,7 @@
 
 #include "player.h"
 
+#include "itemevolution.h"
 #include "bed.h"
 #include "chat.h"
 #include "combat.h"
@@ -113,16 +114,26 @@ std::string Player::getDescription(int32_t lookDistance) const {
 			s << " is " << group->name << '.';
 		} else if (vocation->getId() != VOCATION_NONE) {
 			s << " is " << vocation->getVocDescription() << '.';
-		} else {
-			s << " has no vocation.";
-		}
-	}
+                } else {
+                        s << " has no vocation.";
+                }
+        }
 
-	if (party) {
-		if (lookDistance == -1) {
-			s << " Your party has ";
-		} else if (sex == PLAYERSEX_FEMALE) {
-			s << " She is in a party with ";
+        if (const std::string evolutionTitle = g_itemEvolution.getPlayerTitle(this); !evolutionTitle.empty()) {
+                if (lookDistance == -1) {
+                        s << " Your evolving armament is known as " << evolutionTitle << '.';
+                } else if (sex == PLAYERSEX_FEMALE) {
+                        s << " Her evolving armament is known as " << evolutionTitle << '.';
+                } else {
+                        s << " His evolving armament is known as " << evolutionTitle << '.';
+                }
+        }
+
+        if (party) {
+                if (lookDistance == -1) {
+                        s << " Your party has ";
+                } else if (sex == PLAYERSEX_FEMALE) {
+                        s << " She is in a party with ";
 		} else {
 			s << " He is in a party with ";
 		}
@@ -1741,13 +1752,14 @@ uint8_t Player::getPercentLevel(uint64_t count, uint64_t nextLevelCount) {
 }
 
 void Player::onBlockHit() {
-	if (shieldBlockCount > 0) {
-		--shieldBlockCount;
+        if (shieldBlockCount > 0) {
+                --shieldBlockCount;
 
-		if (hasShield()) {
-			addSkillAdvance(SKILL_SHIELD, 1);
-		}
-	}
+                if (hasShield()) {
+                        addSkillAdvance(SKILL_SHIELD, 1);
+                        g_itemEvolution.onShieldBlock(this);
+                }
+        }
 }
 
 void Player::onAttackedCreatureBlockHit(BlockType_t blockType) {
@@ -1855,11 +1867,14 @@ BlockType_t Player::blockHit(Creature* attacker, CombatType_t combatType, int32_
 		}
 	}
 
-	if (damage <= 0) {
-		damage = 0;
-		blockType = BLOCK_ARMOR;
-	}
-	return blockType;
+        if (damage <= 0) {
+                damage = 0;
+                blockType = BLOCK_ARMOR;
+        }
+        if (damage > 0) {
+                g_itemEvolution.onArmorHit(this, damage);
+        }
+        return blockType;
 }
 
 Connection::Address Player::getIP() const {
