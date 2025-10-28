@@ -322,7 +322,7 @@ bool Spawn::spawnMonster(uint32_t spawnId, MonsterType* mType, const Position& p
 		}
 	}
 
-	Monster* monster = monster_ptr.release();
+        Monster* monster = monster_ptr.release();
         monster->setDirection(dir);
         monster->setMasterPos(pos);
         monster->incrementReferenceCounter();
@@ -387,11 +387,11 @@ void Spawn::registerKill(uint32_t spawnId, MonsterRank rank) {
 }
 
 void Spawn::startup() {
-	for (const auto& it : spawnMap) {
-		uint32_t spawnId = it.first;
-		const spawnBlock_t& sb = it.second;
-		spawnMonster(spawnId, sb, true);
-	}
+        for (auto& it : spawnMap) {
+                uint32_t spawnId = it.first;
+                spawnBlock_t& sb = it.second;
+                spawnMonster(spawnId, sb, true);
+        }
 }
 
 void Spawn::checkSpawn() {
