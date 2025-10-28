@@ -10,6 +10,7 @@
 #include "game.h"
 #include "luavariant.h"
 #include "pugicast.h"
+#include "itemevolution.h"
 
 extern Game g_game;
 extern Vocations g_vocations;
@@ -347,27 +348,30 @@ void Weapon::internalUseWeapon(Player* player, Item* item, Creature* target, int
 		} else {
 			damage.origin = ORIGIN_MELEE;
 		}
-		damage.primary.type = params.combatType;
-		damage.primary.value = (getWeaponDamage(player, target, item) * damageModifier) / 100;
-		damage.secondary.type = getElementType();
-		damage.secondary.value = getElementDamage(player, target, item);
-		Combat::doTargetCombat(player, target, damage, params);
-	}
+                damage.primary.type = params.combatType;
+                damage.primary.value = (getWeaponDamage(player, target, item) * damageModifier) / 100;
+                damage.secondary.type = getElementType();
+                damage.secondary.value = getElementDamage(player, target, item);
+                g_itemEvolution.modifyDamage(player, item, damage);
+                Combat::doTargetCombat(player, target, damage, params);
+        }
 
-	onUsedWeapon(player, item, target->getTile());
+        onUsedWeapon(player, item, target->getTile());
+        g_itemEvolution.onWeaponUsed(player, item);
 }
 
 void Weapon::internalUseWeapon(Player* player, Item* item, Tile* tile) const {
-	if (scripted) {
-		LuaVariant var;
-		var.setTargetPosition(tile->getPosition());
-		executeUseWeapon(player, var);
-	} else {
-		Combat::postCombatEffects(player, tile->getPosition(), params);
-		g_game.addMagicEffect(tile->getPosition(), CONST_ME_POFF);
-	}
+        if (scripted) {
+                LuaVariant var;
+                var.setTargetPosition(tile->getPosition());
+                executeUseWeapon(player, var);
+        } else {
+                Combat::postCombatEffects(player, tile->getPosition(), params);
+                g_game.addMagicEffect(tile->getPosition(), CONST_ME_POFF);
+        }
 
-	onUsedWeapon(player, item, tile);
+        onUsedWeapon(player, item, tile);
+        g_itemEvolution.onWeaponUsed(player, item);
 }
 
 void Weapon::onUsedWeapon(Player* player, Item* item, Tile* destTile) const {

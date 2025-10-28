@@ -37,6 +37,43 @@
 
 #include <ranges>
 
+#if LUA_VERSION_NUM < 502
+extern "C" LUALIB_API void luaL_traceback(lua_State* L, lua_State* L1, const char* msg, int level)
+{
+	lua_Debug ar;
+	std::string buffer;
+	if (msg && *msg != '\0') {
+		buffer += msg;
+		buffer += '\n';
+	}
+	buffer += "stack traceback:";
+	while (lua_getstack(L1, level++, &ar) != 0) {
+		if (lua_getinfo(L1, "Sln", &ar) == 0) {
+			break;
+		}
+		buffer += "\n\t";
+		buffer += ar.short_src;
+		if (ar.currentline > 0) {
+			buffer += ':';
+			buffer += std::to_string(ar.currentline);
+		}
+		buffer += ": ";
+		if (ar.namewhat && *ar.namewhat != '\0') {
+			buffer += ar.namewhat;
+			buffer += ' ';
+		}
+		if (ar.name && *ar.name != '\0') {
+			buffer += ar.name;
+		} else if (ar.what && *ar.what != '\0') {
+			buffer += ar.what;
+		} else {
+			buffer += "?";
+		}
+	}
+	lua_pushlstring(L, buffer.c_str(), buffer.size());
+}
+#endif
+
 extern Chat* g_chat;
 extern Game g_game;
 extern GlobalEvents* g_globalEvents;
