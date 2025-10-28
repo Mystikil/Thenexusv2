@@ -5,6 +5,8 @@
 
 #include "spawn.h"
 
+#include <limits>
+
 #include "configmanager.h"
 #include "events.h"
 #include "game.h"
@@ -13,6 +15,7 @@
 #include "pugicast.h"
 #include "scheduler.h"
 #include "spectators.h"
+#include "tools.h"
 
 extern Monsters g_monsters;
 extern Game g_game;
@@ -258,7 +261,7 @@ bool Spawn::findPlayer(const Position& pos) {
 	return false;
 }
 
-bool Spawn::spawnMonster(uint32_t spawnId, spawnBlock_t sb, bool startup/* = false*/) {
+bool Spawn::spawnMonster(uint32_t spawnId, spawnBlock_t& sb, bool startup/* = false*/) {
 	bool isBlocked = !startup && findPlayer(sb.pos);
 	size_t monstersCount = sb.mTypes.size(), blockedMonsters = 0;
 
@@ -296,10 +299,16 @@ bool Spawn::spawnMonster(uint32_t spawnId, spawnBlock_t sb, bool startup/* = fal
 }
 
 bool Spawn::spawnMonster(uint32_t spawnId, MonsterType* mType, const Position& pos, Direction dir, bool startup/*= false*/) {
-	std::unique_ptr<Monster> monster_ptr(new Monster(mType));
-	if (!events::monster::onSpawn(monster_ptr.get(), pos, startup, false)) {
-		return false;
-	}
+        MonsterRank rank = rollMonsterRank(spawnId);
+
+        std::unique_ptr<Monster> monster_ptr(new Monster(mType));
+        monster_ptr->setRank(rank);
+        monster_ptr->setSpawn(this, spawnId);
+
+        if (!events::monster::onSpawn(monster_ptr.get(), pos, startup, false)) {
+                monster_ptr->setSpawn(nullptr);
+                return false;
+        }
 
 	if (startup) {
 		//No need to send out events to the surrounding since there is no one out there to listen!
@@ -314,14 +323,67 @@ bool Spawn::spawnMonster(uint32_t spawnId, MonsterType* mType, const Position& p
 	}
 
 	Monster* monster = monster_ptr.release();
-	monster->setDirection(dir);
-	monster->setSpawn(this);
-	monster->setMasterPos(pos);
-	monster->incrementReferenceCounter();
+        monster->setDirection(dir);
+        monster->setMasterPos(pos);
+        monster->incrementReferenceCounter();
 
-	spawnedMap.insert({spawnId, monster});
-	spawnMap[spawnId].lastSpawn = OTSYS_TIME();
-	return true;
+        spawnedMap.insert({spawnId, monster});
+        spawnMap[spawnId].lastSpawn = OTSYS_TIME();
+        return true;
+}
+
+MonsterRank Spawn::rollMonsterRank(uint32_t spawnId) {
+        auto it = spawnMap.find(spawnId);
+        if (it == spawnMap.end()) {
+                return MonsterRank::F;
+        }
+
+        spawnBlock_t& sb = it->second;
+        MonsterRank currentRank = MonsterRank::F;
+        bool advanced = true;
+
+        while (advanced) {
+                advanced = false;
+                for (const auto& rule : MONSTER_RANK_UPGRADES) {
+                        if (rule.from != currentRank) {
+                                continue;
+                        }
+
+                        auto& counter = sb.rankKillCounts[static_cast<std::size_t>(rule.from)];
+                        if (counter < rule.killsRequired) {
+                                continue;
+                        }
+
+                        if (uniform_random(1, 100) > rule.chance) {
+                                continue;
+                        }
+
+                        counter -= rule.killsRequired;
+                        currentRank = rule.to;
+                        advanced = true;
+                        break;
+                }
+        }
+
+        return currentRank;
+}
+
+void Spawn::registerKill(uint32_t spawnId, MonsterRank rank) {
+        if (spawnId == 0) {
+                return;
+        }
+
+        auto it = spawnMap.find(spawnId);
+        if (it == spawnMap.end()) {
+                return;
+        }
+
+        auto& counter = it->second.rankKillCounts[static_cast<std::size_t>(rank)];
+        if (counter < std::numeric_limits<uint32_t>::max()) {
+                ++counter;
+        }
+
+        startSpawnCheck();
 }
 
 void Spawn::startup() {

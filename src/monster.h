@@ -5,6 +5,7 @@
 #define FS_MONSTER_H
 
 #include "monsters.h"
+#include "monster_rank.h"
 
 #include "creature.h"
 #include "position.h"
@@ -60,9 +61,7 @@ class Monster final : public Creature {
 			this->nameDescription = nameDescription;
 		};
 
-		std::string getDescription(int32_t) const override {
-			return nameDescription + '.';
-		}
+                std::string getDescription(int32_t) const override;
 
 		CreatureType_t getType() const override {
 			return CREATURETYPE_MONSTER;
@@ -78,12 +77,12 @@ class Monster final : public Creature {
 		RaceType_t getRace() const override {
 			return mType->info.race;
 		}
-		int32_t getArmor() const override {
-			return mType->info.armor;
-		}
-		int32_t getDefense() const override {
-			return mType->info.defense;
-		}
+                int32_t getArmor() const override {
+                        return armorValue;
+                }
+                int32_t getDefense() const override {
+                        return defenseValue;
+                }
 		bool isPushable() const override {
 			return mType->info.pushable && baseSpeed != 0;
 		}
@@ -105,10 +104,22 @@ class Monster final : public Creature {
 		uint32_t getManaCost() const {
 			return mType->info.manaCost;
 		}
-		void setSpawn(Spawn* spawn) {
-			this->spawn = spawn;
-		}
-		bool canWalkOnFieldType(CombatType_t combatType) const;
+                void setSpawn(Spawn* spawn, uint32_t spawnId = 0);
+                bool canWalkOnFieldType(CombatType_t combatType) const;
+
+                MonsterRank getRank() const {
+                        return rank;
+                }
+                std::string getRankName() const;
+                void setRank(MonsterRank newRank);
+                bool setRank(const std::string& rankName);
+                std::vector<LootBlock> getRankLoot() const;
+                double getRankLootMultiplier() const {
+                        return rankLootMultiplier;
+                }
+                double getRankDamageMultiplier() const {
+                        return rankDamageMultiplier;
+                }
 
 		void onAttackedCreatureDisappear(bool isLogout) override;
 
@@ -153,9 +164,9 @@ class Monster final : public Creature {
 		}
 
 		bool isTarget(const Creature* creature) const;
-		bool isFleeing() const {
-			return !isSummon() && getHealth() <= mType->info.runAwayHealth && challengeFocusDuration <= 0;
-		}
+                bool isFleeing() const {
+                        return !isSummon() && getHealth() <= fleeHealthThreshold && challengeFocusDuration <= 0;
+                }
 
 		bool getDistanceStep(const Position& targetPos, Direction& direction, bool flee = false);
 		bool isTargetNearby() const {
@@ -179,8 +190,16 @@ class Monster final : public Creature {
 		std::string name;
 		std::string nameDescription;
 
-		MonsterType* mType;
-		Spawn* spawn = nullptr;
+                MonsterType* mType;
+                Spawn* spawn = nullptr;
+                MonsterRank rank = MonsterRank::F;
+                double rankDamageMultiplier = 1.0;
+                double rankLootMultiplier = 1.0;
+                uint64_t rankExperience = 0;
+                int32_t defenseValue = 0;
+                int32_t armorValue = 0;
+                int32_t fleeHealthThreshold = 0;
+                uint32_t spawnBlockId = 0;
 
 		int64_t lastMeleeAttack = 0;
 
@@ -250,9 +269,9 @@ class Monster final : public Creature {
 		bool isFriend(const Creature* creature) const;
 		bool isOpponent(const Creature* creature) const;
 
-		uint64_t getLostExperience() const override {
-			return skillLoss ? mType->info.experience : 0;
-		}
+                uint64_t getLostExperience() const override {
+                        return skillLoss ? rankExperience : 0;
+                }
 		uint16_t getLookCorpse() const override {
 			return mType->info.lookcorpse;
 		}
@@ -263,9 +282,13 @@ class Monster final : public Creature {
 		uint32_t getConditionImmunities() const override {
 			return mType->info.conditionImmunities;
 		}
-		void getPathSearchParams(const Creature* creature, FindPathParams& fpp) const override;
+                void getPathSearchParams(const Creature* creature, FindPathParams& fpp) const override;
 
-		friend class LuaScriptInterface;
+                void applyRankData();
+                LootBlock buildRankLootBlock(const LootBlock& lootBlock) const;
+                int32_t scaleDamageValue(int32_t value) const;
+
+                friend class LuaScriptInterface;
 };
 
 #endif // FS_MONSTER_H

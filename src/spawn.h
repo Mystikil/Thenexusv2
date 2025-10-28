@@ -5,17 +5,19 @@
 #define FS_SPAWN_H
 
 #include "position.h"
+#include "monster_rank.h"
 
 class Monster;
 class MonsterType;
 class Npc;
 
 struct spawnBlock_t {
-	Position pos;
-	std::vector<std::pair<MonsterType*, uint16_t>> mTypes;
-	int64_t lastSpawn;
-	uint32_t interval;
-	Direction direction;
+        Position pos;
+        std::vector<std::pair<MonsterType*, uint16_t>> mTypes;
+        int64_t lastSpawn;
+        uint32_t interval;
+        Direction direction;
+        std::array<uint32_t, MONSTER_RANK_COUNT> rankKillCounts{};
 };
 
 class Spawn {
@@ -36,11 +38,12 @@ class Spawn {
 		}
 		void startup();
 
-		void startSpawnCheck();
-		void stopEvent();
+                void startSpawnCheck();
+                void stopEvent();
 
-		bool isInSpawnZone(const Position& pos);
-		void cleanup();
+                bool isInSpawnZone(const Position& pos);
+                void cleanup();
+                void registerKill(uint32_t spawnId, MonsterRank rank);
 
 	private:
 		//map of the spawned creatures
@@ -57,9 +60,10 @@ class Spawn {
 		uint32_t checkSpawnEvent = 0;
 
 		static bool findPlayer(const Position& pos);
-		bool spawnMonster(uint32_t spawnId, spawnBlock_t sb, bool startup = false);
-		bool spawnMonster(uint32_t spawnId, MonsterType* mType, const Position& pos, Direction dir, bool startup = false);
-		void checkSpawn();
+                bool spawnMonster(uint32_t spawnId, spawnBlock_t& sb, bool startup = false);
+                bool spawnMonster(uint32_t spawnId, MonsterType* mType, const Position& pos, Direction dir, bool startup = false);
+                void checkSpawn();
+                MonsterRank rollMonsterRank(uint32_t spawnId);
 };
 
 class Spawns {
