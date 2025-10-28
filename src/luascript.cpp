@@ -2723,12 +2723,15 @@ void LuaScriptInterface::registerFunctions() {
 	registerClass(L, "Monster", "Creature", LuaScriptInterface::luaMonsterCreate);
 	registerMetaMethod(L, "Monster", "__eq", LuaScriptInterface::luaUserdataCompare);
 
-	registerMethod(L, "Monster", "isMonster", LuaScriptInterface::luaMonsterIsMonster);
+        registerMethod(L, "Monster", "isMonster", LuaScriptInterface::luaMonsterIsMonster);
 
-	registerMethod(L, "Monster", "getId", LuaScriptInterface::luaMonsterGetId);
-	registerMethod(L, "Monster", "getType", LuaScriptInterface::luaMonsterGetType);
+        registerMethod(L, "Monster", "getId", LuaScriptInterface::luaMonsterGetId);
+        registerMethod(L, "Monster", "getType", LuaScriptInterface::luaMonsterGetType);
 
-	registerMethod(L, "Monster", "rename", LuaScriptInterface::luaMonsterRename);
+        registerMethod(L, "Monster", "rename", LuaScriptInterface::luaMonsterRename);
+        registerMethod(L, "Monster", "getRank", LuaScriptInterface::luaMonsterGetRank);
+        registerMethod(L, "Monster", "setRank", LuaScriptInterface::luaMonsterSetRank);
+        registerMethod(L, "Monster", "getRankLoot", LuaScriptInterface::luaMonsterGetRankLoot);
 
 	registerMethod(L, "Monster", "getSpawnPosition", LuaScriptInterface::luaMonsterGetSpawnPosition);
 	registerMethod(L, "Monster", "isInSpawnRange", LuaScriptInterface::luaMonsterIsInSpawnRange);
@@ -10459,20 +10462,62 @@ int LuaScriptInterface::luaMonsterGetType(lua_State* L) {
 }
 
 int LuaScriptInterface::luaMonsterRename(lua_State* L) {
-	// monster:rename(name[, nameDescription])
-	Monster* monster = lua::getUserdata<Monster>(L, 1);
-	if (!monster) {
-		lua_pushnil(L);
-		return 1;
-	}
+        // monster:rename(name[, nameDescription])
+        Monster* monster = lua::getUserdata<Monster>(L, 1);
+        if (!monster) {
+                lua_pushnil(L);
+                return 1;
+        }
 
-	monster->setName(lua::getString(L, 2));
-	if (lua_gettop(L) >= 3) {
-		monster->setNameDescription(lua::getString(L, 3));
-	}
+        monster->setName(lua::getString(L, 2));
+        if (lua_gettop(L) >= 3) {
+                monster->setNameDescription(lua::getString(L, 3));
+        }
 
-	lua::pushBoolean(L, true);
-	return 1;
+        lua::pushBoolean(L, true);
+        return 1;
+}
+
+int LuaScriptInterface::luaMonsterGetRank(lua_State* L) {
+        // monster:getRank()
+        Monster* monster = lua::getUserdata<Monster>(L, 1);
+        if (!monster) {
+                lua_pushnil(L);
+                return 1;
+        }
+
+        lua::pushString(L, monster->getRankName());
+        return 1;
+}
+
+int LuaScriptInterface::luaMonsterSetRank(lua_State* L) {
+        // monster:setRank(rankName)
+        Monster* monster = lua::getUserdata<Monster>(L, 1);
+        if (!monster) {
+                lua_pushboolean(L, false);
+                return 1;
+        }
+
+        if (lua_gettop(L) < 2) {
+                lua_pushboolean(L, false);
+                return 1;
+        }
+
+        lua::pushBoolean(L, monster->setRank(lua::getString(L, 2)));
+        return 1;
+}
+
+int LuaScriptInterface::luaMonsterGetRankLoot(lua_State* L) {
+        // monster:getRankLoot()
+        Monster* monster = lua::getUserdata<Monster>(L, 1);
+        if (!monster) {
+                lua_pushnil(L);
+                return 1;
+        }
+
+        auto loot = monster->getRankLoot();
+        pushLoot(L, loot);
+        return 1;
 }
 
 int LuaScriptInterface::luaMonsterGetSpawnPosition(lua_State* L) {
