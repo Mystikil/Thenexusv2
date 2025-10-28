@@ -93,7 +93,7 @@ std::string Monster::getDescription(int32_t) const {
         if (!description.empty() && description.back() != '.') {
                 description.push_back('.');
         }
-        description.append(" Its rank is ");
+        description.append(" Its Rank is ");
         description.append(getRankName());
         description.push_back('.');
         return description;
