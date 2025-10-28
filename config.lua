@@ -1,25 +1,5 @@
 -- Combat settings
 
--- DEBUG: show how the loader is consuming this file
--- If your system uses globals style, the loader should NOT rely on the return value.
--- If it does, this will make it obvious.
-
-print("[config.lua] source:", debug.getinfo(1, "S").source)
-print("[config.lua] begin load")
-
-
-print("[config.lua] begin load")
-
--- After your weaponEvolution block (bottom of file), add:
-local function dumpType(name, val)
-  print(string.format("[config.lua] %s type = %s", name, type(val)))
-end
-
-dumpType("weaponEvolution", weaponEvolution)
-dumpType("weaponEvolution.enabled", weaponEvolution and weaponEvolution.enabled)
-dumpType("experienceStages", experienceStages)
-
-
 -- NOTE: valid values for worldType are: "pvp", "no-pvp" and "pvp-enforced"
 worldType = "pvp"
 hotkeyAimbotEnabled = true
