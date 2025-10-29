@@ -1,12 +1,7 @@
 local slotsToCheck = {
         {slot = CONST_SLOT_RIGHT, label = "Weapon"},
         {slot = CONST_SLOT_LEFT, label = "Off-hand"},
-        {slot = CONST_SLOT_HEAD, label = "Helmet"},
-        {slot = CONST_SLOT_NECKLACE, label = "Amulet"},
         {slot = CONST_SLOT_ARMOR, label = "Armor"},
-        {slot = CONST_SLOT_LEGS, label = "Legs"},
-        {slot = CONST_SLOT_FEET, label = "Boots"},
-        {slot = CONST_SLOT_RING, label = "Ring"},
 }
 
 local function formatCategoryName(category)
@@ -56,7 +51,7 @@ function onSay(player, words, param)
         end
 
         if not reported then
-                player:sendTextMessage(MESSAGE_INFO_DESCR, "You do not have any evolving weapons or armor equipped.")
+                player:sendTextMessage(MESSAGE_INFO_DESCR, "You do not have any evolving items equipped.")
         end
         return false
 end

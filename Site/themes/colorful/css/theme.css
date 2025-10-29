@@ -1,0 +1,30 @@
+body {
+    background: linear-gradient(180deg, var(--brand-bg) 0%, #ffffff 100%);
+    color: var(--brand-text);
+}
+
+a {
+    color: var(--brand-color);
+}
+
+a:hover {
+    color: var(--brand-accent);
+}
+
+header.site-header {
+    background: var(--brand-surface);
+}
+
+button,
+.account-form button,
+.admin-button {
+    background: var(--brand-color);
+    border: none;
+    color: #fff;
+}
+
+button:hover,
+.account-form button:hover,
+.admin-button:hover {
+    background: var(--brand-accent);
+}

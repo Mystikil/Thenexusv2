@@ -1,0 +1,239 @@
+.bestiary-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.bestiary-filters {
+    display: grid;
+    gap: var(--spacing-sm);
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    background: var(--color-surface);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-soft);
+}
+
+.bestiary-filters__group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2xs);
+}
+
+.bestiary-filters__group label {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.bestiary-filters__group input,
+.bestiary-filters__group select {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.bestiary-filters__actions {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+}
+
+.bestiary-filters__actions button {
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: var(--color-primary);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.bestiary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.bestiary-card {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-soft);
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.bestiary-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--spacing-sm);
+}
+
+.bestiary-card__title {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.bestiary-card__race {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+}
+
+.bestiary-card__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs) var(--spacing-md);
+    font-size: 0.9rem;
+}
+
+.bestiary-card__elements {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2xs);
+    margin: var(--spacing-xs) 0;
+}
+
+.bestiary-card__element {
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+}
+
+.bestiary-card__element--resist {
+    background: rgba(34, 197, 94, 0.15);
+    color: #166534;
+}
+
+.bestiary-card__element--weak {
+    background: rgba(248, 113, 113, 0.18);
+    color: #7f1d1d;
+}
+
+.bestiary-card__element--immune {
+    background: rgba(148, 163, 184, 0.3);
+    color: #1f2937;
+}
+
+.bestiary-card__footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.bestiary-card__link {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    background: var(--color-primary);
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.bestiary-pagination {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+}
+
+.bestiary-pagination a,
+.bestiary-pagination span {
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-soft);
+    text-decoration: none;
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.bestiary-pagination .is-active {
+    background: var(--color-primary);
+    color: #ffffff;
+}
+
+.monster-detail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.monster-detail__race {
+    color: var(--color-text-muted);
+}
+
+.monster-detail__layout {
+    display: grid;
+    gap: var(--spacing-lg);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.monster-detail__panel {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-soft);
+    padding: var(--spacing-md);
+}
+
+.monster-detail__panel h3 {
+    margin-top: 0;
+}
+
+.monster-detail__stats {
+    display: grid;
+    gap: var(--spacing-2xs);
+    font-size: 0.95rem;
+}
+
+.monster-detail__elements table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.monster-detail__elements th,
+.monster-detail__elements td {
+    text-align: left;
+    padding: var(--spacing-2xs) var(--spacing-xs);
+}
+
+.monster-detail__list {
+    margin: 0;
+    padding-left: 1.25rem;
+}
+
+.monster-detail__loot-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.monster-detail__loot-table th,
+.monster-detail__loot-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.monster-detail__related {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+}
+
+.monster-detail__related a {
+    padding: 0.35rem 0.6rem;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-soft);
+    text-decoration: none;
+}
+
+@media (max-width: 768px) {
+    .bestiary-filters {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+}

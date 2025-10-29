@@ -1,0 +1,122 @@
+:root {
+  --nx-bg: #0c0f14;
+  --nx-bg-soft: #11161d;
+  --nx-surface: #161c24;
+  --nx-text: #dfe7ef;
+  --nx-muted: #9fb0c4;
+  --nx-primary: #5aa0ff;
+  --nx-accent: #7f8cff;
+  --nx-success: #2dcf9a;
+  --nx-warning: #f6c36b;
+  --nx-danger: #ff6b6b;
+  --nx-glow: 0 0 0.6rem rgba(122, 164, 255, .25), 0 0 1.2rem rgba(122, 164, 255, .12);
+  --nx-card-border: 1px solid rgba(255,255,255,.06);
+  --nx-radius: 14px;
+}
+
+html,
+body {
+  height: 100%;
+  background: radial-gradient(1200px 600px at 20% -10%, rgba(90,160,255,.08), transparent),
+              radial-gradient(1200px 600px at 120% 10%, rgba(127,140,255,.06), transparent),
+              var(--nx-bg);
+  color: var(--nx-text);
+}
+
+a {
+  color: var(--nx-primary);
+}
+
+.navbar,
+.dropdown-menu {
+  background: var(--nx-surface);
+  border: var(--nx-card-border);
+  border-radius: var(--nx-radius);
+}
+
+.container-page {
+  max-width: 1280px;
+  margin: 16px auto;
+  padding: 0 16px;
+}
+
+.nx-card,
+.card {
+  background: linear-gradient(180deg, var(--nx-surface), var(--nx-bg-soft));
+  border: var(--nx-card-border);
+  border-radius: var(--nx-radius);
+  box-shadow: var(--nx-glow);
+}
+
+.card-header {
+  background: transparent;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+.table {
+  color: var(--nx-text);
+}
+
+.table thead th {
+  color: var(--nx-muted);
+  border-color: rgba(255,255,255,.08);
+}
+
+.table tbody tr {
+  border-color: rgba(255,255,255,.06);
+}
+
+.badge {
+  border-radius: 999px;
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--nx-primary);
+  --bs-btn-border-color: var(--nx-primary);
+  --bs-btn-hover-bg: #4a92f0;
+  --bs-btn-hover-border-color: #4a92f0;
+  --bs-btn-color: #0b1220;
+  box-shadow: 0 0 0.6rem rgba(90,160,255,.25);
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--nx-primary);
+  --bs-btn-border-color: var(--nx-primary);
+}
+
+.form-control,
+.form-select {
+  background: #0f141b;
+  border: 1px solid rgba(255,255,255,.08);
+  color: var(--nx-text);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: rgba(90,160,255,.6);
+  box-shadow: 0 0 0 0.25rem rgba(90,160,255,.25);
+}
+
+.nx-shadow-sm {
+  box-shadow: 0 0 .4rem rgba(0,0,0,.35);
+}
+
+.nx-glow {
+  box-shadow: var(--nx-glow);
+}
+
+.nx-status-indicator {
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.nx-status-indicator--online {
+  color: #66ffe8;
+  text-shadow: 0 0 .8rem rgba(102, 255, 232, .6);
+}
+
+.nx-status-indicator--offline {
+  color: #ff6b8a;
+  text-shadow: 0 0 .8rem rgba(255, 107, 138, .55);
+}

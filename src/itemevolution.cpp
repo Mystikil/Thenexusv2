@@ -30,15 +30,6 @@ namespace {
                 "melee", "distance", "shield", "armor", "wand"
         };
 
-        constexpr std::array<slots_t, 6> ARMOR_EVOLUTION_SLOTS = {
-                CONST_SLOT_HEAD,
-                CONST_SLOT_NECKLACE,
-                CONST_SLOT_ARMOR,
-                CONST_SLOT_LEGS,
-                CONST_SLOT_FEET,
-                CONST_SLOT_RING,
-        };
-
         constexpr size_t toIndex(ConfigManager::EvolutionItemCategory category) {
                 return static_cast<size_t>(category);
         }
@@ -278,12 +269,7 @@ bool ItemEvolution::getProgressInfo(const Player* player, Item* item, slots_t sl
 
         Category category = Category::LAST;
         switch (slot) {
-                case CONST_SLOT_HEAD:
-                case CONST_SLOT_NECKLACE:
                 case CONST_SLOT_ARMOR:
-                case CONST_SLOT_LEGS:
-                case CONST_SLOT_FEET:
-                case CONST_SLOT_RING:
                         category = Category::ARMOR;
                         break;
 
@@ -304,13 +290,6 @@ bool ItemEvolution::getProgressInfo(const Player* player, Item* item, slots_t sl
 
         if (category == Category::LAST) {
                 return false;
-        }
-
-        if (category == Category::ARMOR) {
-                const ItemType& type = Item::items[item->getID()];
-                if (type.armor == 0 && !item->hasAttribute(ITEM_ATTRIBUTE_ARMOR)) {
-                        return false;
-                }
         }
 
         const auto* categoryConfig = getCategoryConfig(category);
