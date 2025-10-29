@@ -81,8 +81,21 @@ set(tfs_SRC
 	${CMAKE_CURRENT_LIST_DIR}/vocation.cpp
 	${CMAKE_CURRENT_LIST_DIR}/weapons.cpp
 	${CMAKE_CURRENT_LIST_DIR}/wildcardtree.cpp
-	${CMAKE_CURRENT_LIST_DIR}/world/WorldPressureManager.cpp
-	${CMAKE_CURRENT_LIST_DIR}/xtea.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/world/WorldPressureManager.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/xtea.cpp
+)
+
+option(WITH_PYTHON "Enable embedded Python runtime" ON)
+
+if (WITH_PYTHON)
+        set(PYTHON_VERSION "3.11" CACHE STRING "Target Python version (e.g., 3.10, 3.11, 3.12)")
+        find_package(Python ${PYTHON_VERSION} EXACT COMPONENTS Development REQUIRED)
+        message(STATUS "Using Python: ${Python_LIBRARIES} - ${Python_INCLUDE_DIRS}")
+endif()
+
+set(PY_SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/python/PythonEngine.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/python/PyBindings.cpp
 )
 
 set(tfs_HDR
@@ -191,9 +204,21 @@ set(tfs_MAIN ${CMAKE_CURRENT_LIST_DIR}/main.cpp PARENT_SCOPE)
 add_library(tfslib ${tfs_SRC})
 target_sources(tfslib PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/game/InstanceManager.cpp)
 target_include_directories(tfslib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+if (WITH_PYTHON)
+        target_sources(tfslib PRIVATE ${PY_SOURCES})
+        target_compile_definitions(tfslib PRIVATE WITH_PYTHON)
+        target_include_directories(tfslib PRIVATE ${Python_INCLUDE_DIRS})
+        target_link_libraries(tfslib PUBLIC ${Python_LIBRARIES})
+endif()
 if(TARGET theforgottenserver)
         target_sources(theforgottenserver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/game/InstanceManager.cpp)
         target_include_directories(theforgottenserver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+        if (WITH_PYTHON)
+                target_sources(theforgottenserver PRIVATE ${PY_SOURCES})
+                target_compile_definitions(theforgottenserver PRIVATE WITH_PYTHON)
+                target_include_directories(theforgottenserver PRIVATE ${Python_INCLUDE_DIRS})
+                target_link_libraries(theforgottenserver PRIVATE ${Python_LIBRARIES})
+        endif()
 endif()
 target_link_libraries(tfslib PRIVATE
         Boost::iostreams

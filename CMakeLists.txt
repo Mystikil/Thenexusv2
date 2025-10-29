@@ -42,10 +42,23 @@ endif()
 find_package(OpenSSL 3.0.0 REQUIRED COMPONENTS Crypto)
 
 # LIB FMT
-find_package(fmt 8.1.1 CONFIG)
+find_package(fmt CONFIG QUIET)
 
 if(NOT fmt_FOUND)
-	find_package(fmt 8.1.1 REQUIRED)
+        message(STATUS "fmt not found; trying find_package(fmt MODULE)...")
+        find_package(fmt QUIET)
+endif()
+
+if(fmt_FOUND)
+        if(NOT TARGET fmt::fmt)
+                if(TARGET fmt::fmt-header-only)
+                        add_library(fmt::fmt ALIAS fmt::fmt-header-only)
+                else()
+                        message(FATAL_ERROR "fmt library does not provide fmt::fmt target. Install an updated package or provide an alias.")
+                endif()
+        endif()
+else()
+        message(FATAL_ERROR "fmt library not found. Install it or enable FetchContent fallback.")
 endif()
 
 # LIB MariaDB or LIB MySQL
