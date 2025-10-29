@@ -145,7 +145,8 @@ local function createRun(activity, leader)
         armorMult = 1,
         entryPos = activity.entryPos,
         exitPos = activity.exitPos,
-        bossNames = { activity.bossName },
+        bossNames = activity.bossName and { activity.bossName } or {},
+        mapName = activity.mapName,
         partyOnly = activity.type == 'party',
         minLevel = activity.unlock and activity.unlock.minLevel or 0,
         cooldownSeconds = activity.cooldown and activity.cooldown.seconds or 0,
@@ -185,11 +186,15 @@ local function ensureRun(activity, leader)
 end
 
 local function teleportPlayer(run, player)
-    teleportInto(run.uid, player)
+    local ok, reason = teleportInto(run.uid, player)
+    if not ok then
+        return false, reason
+    end
     player:setStorageValue(FOCUS_STORAGE_ID, run.activity.id)
     markBind(player, run.activity)
     run.players[player:getGuid()] = true
     setPlayerRun(player, run)
+    return true
 end
 
 local function validateParty(player, activity)
@@ -298,7 +303,13 @@ function ActivityManager.enter(player, activityId)
         end
     end
     for _, member in ipairs(participants) do
-        teleportPlayer(run, member)
+        local ok, reason = teleportPlayer(run, member)
+        if not ok then
+            local failure = reason or 'Failed to enter instance.'
+            runLog(activity, 'enter failed for %s: %s', member:getName(), failure)
+            ActivityManager.cleanup(run)
+            return false, failure
+        end
         member:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format('Entering %s (%s).', activity.name, activity.kind))
         runLog(activity, 'enter uid=%d player=%s', run.uid, member:getName())
     end
@@ -420,6 +431,7 @@ function ActivityManager.leave(player)
     end
     player:teleportTo(toPosition(run.activity.exitPos))
     player:resetToWorldInstance()
+    playerLeaveInstance(player)
     applyCooldown(player, run.activity)
     run.players[player:getGuid()] = nil
     setPlayerRun(player, nil)
@@ -514,10 +526,18 @@ function ActivityManager.onLogin(player)
     if uid > 0 then
         local run = getRun(uid)
         if run then
-            run.players[player:getGuid()] = true
-            setPlayerRun(player, run)
-            player:setStorageValue(FOCUS_STORAGE_ID, run.activity.id)
-            runLog(run.activity, 'rebind player %s on login', player:getName())
+            local ok, reason = bindPlayer(run.uid, player)
+            if ok then
+                run.players[player:getGuid()] = true
+                setPlayerRun(player, run)
+                player:setStorageValue(FOCUS_STORAGE_ID, run.activity.id)
+                runLog(run.activity, 'rebind player %s on login', player:getName())
+            else
+                player:setStorageValue(RUN_STORAGE_ID, -1)
+                if reason then
+                    runLog(run.activity, 'rebind failed for %s: %s', player:getName(), reason)
+                end
+            end
         else
             player:setStorageValue(RUN_STORAGE_ID, -1)
         end

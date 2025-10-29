@@ -13,6 +13,9 @@
 #include "depotchest.h"
 #include "events.h"
 #include "game/game.h"
+#if ENABLE_INSTANCING
+#include "game/InstanceManager.h"
+#endif
 #include "globalevent.h"
 #include "housetile.h"
 #include "inbox.h"
@@ -37,6 +40,7 @@
 #include "utils/Logger.h"
 #include "weapons.h"
 
+#include <ctime>
 #include <ranges>
 #include <sstream>
 
@@ -2094,14 +2098,23 @@ void LuaScriptInterface::registerFunctions() {
 	registerEnum(L, DECAYING_PENDING)
 
 	// _G
-	registerGlobalVariable(L, "INDEX_WHEREEVER", INDEX_WHEREEVER);
-	registerGlobalBoolean(L, "VIRTUAL_PARENT", true);
+        registerGlobalVariable(L, "INDEX_WHEREEVER", INDEX_WHEREEVER);
+        registerGlobalBoolean(L, "VIRTUAL_PARENT", true);
 
-	registerGlobalMethod(L, "isType", LuaScriptInterface::luaIsType);
-	registerGlobalMethod(L, "rawgetmetatable", LuaScriptInterface::luaRawGetMetatable);
+        registerGlobalMethod(L, "isType", LuaScriptInterface::luaIsType);
+        registerGlobalMethod(L, "rawgetmetatable", LuaScriptInterface::luaRawGetMetatable);
+#if ENABLE_INSTANCING
+        registerGlobalMethod(L, "createInstance", LuaScriptInterface::luaCreateInstance);
+        registerGlobalMethod(L, "bindPlayer", LuaScriptInterface::luaBindPlayer);
+        registerGlobalMethod(L, "bindParty", LuaScriptInterface::luaBindParty);
+        registerGlobalMethod(L, "teleportInto", LuaScriptInterface::luaTeleportInto);
+        registerGlobalMethod(L, "closeInstance", LuaScriptInterface::luaCloseInstance);
+        registerGlobalMethod(L, "getActiveInstances", LuaScriptInterface::luaGetActiveInstances);
+        registerGlobalMethod(L, "playerLeaveInstance", LuaScriptInterface::luaPlayerLeaveInstance);
+#endif
 
-	// configKeys
-	registerTable(L, "configKeys");
+        // configKeys
+        registerTable(L, "configKeys");
 
 	registerEnumIn(L, "configKeys", ConfigManager::ALLOW_CHANGEOUTFIT)
 	registerEnumIn(L, "configKeys", ConfigManager::ONE_PLAYER_ON_ACCOUNT)
@@ -3845,13 +3858,214 @@ int LuaScriptInterface::luaSaveServer(lua_State* L) {
 }
 
 int LuaScriptInterface::luaCleanMap(lua_State* L) {
-	lua_pushnumber(L, g_game.map.clean());
-	return 1;
+        lua_pushnumber(L, g_game.map.clean());
+        return 1;
 }
 
+#if ENABLE_INSTANCING
+int LuaScriptInterface::luaCreateInstance(lua_State* L) {
+        if (!lua_istable(L, 1)) {
+                lua_pushnumber(L, 0);
+                return 1;
+        }
+
+        InstanceConfig cfg;
+        cfg.name = lua::getFieldString(L, 1, "name");
+        cfg.durationSeconds = lua::getField<uint32_t>(L, 1, "durationSeconds", cfg.durationSeconds);
+        cfg.expMult = lua::getField<float>(L, 1, "expMult", cfg.expMult);
+        cfg.lootMult = lua::getField<float>(L, 1, "lootMult", cfg.lootMult);
+        cfg.hpMult = lua::getField<float>(L, 1, "hpMult", cfg.hpMult);
+        cfg.dmgMult = lua::getField<float>(L, 1, "dmgMult", cfg.dmgMult);
+        cfg.armorMult = lua::getField<float>(L, 1, "armorMult", cfg.armorMult);
+        cfg.minLevel = lua::getField<uint16_t>(L, 1, "minLevel", cfg.minLevel);
+        cfg.cooldownSeconds = lua::getField<uint32_t>(L, 1, "cooldownSeconds", cfg.cooldownSeconds);
+        cfg.seed = lua::getField<uint32_t>(L, 1, "seed", cfg.seed);
+        cfg.mapName = lua::getFieldString(L, 1, "mapName");
+
+        auto readPosition = [&](const char* key, Position& out) {
+                lua_getfield(L, 1, key);
+                if (lua_istable(L, -1)) {
+                        int tableIndex = lua_gettop(L);
+                        out.x = lua::getField<uint16_t>(L, tableIndex, "x", out.x);
+                        out.y = lua::getField<uint16_t>(L, tableIndex, "y", out.y);
+                        out.z = lua::getField<uint8_t>(L, tableIndex, "z", out.z);
+                }
+                lua_pop(L, 1);
+        };
+
+        readPosition("entryPos", cfg.entryPos);
+        readPosition("exitPos", cfg.exitPos);
+
+        lua_getfield(L, 1, "partyOnly");
+        if (!lua_isnil(L, -1)) {
+                cfg.partyOnly = lua::getBoolean(L, -1, cfg.partyOnly);
+        }
+        lua_pop(L, 1);
+
+        lua_getfield(L, 1, "warnAt");
+        if (lua_istable(L, -1)) {
+                size_t length = lua_rawlen(L, -1);
+                cfg.warnAt.reserve(length);
+                for (size_t i = 1; i <= length; ++i) {
+                        lua_rawgeti(L, -1, i);
+                        if (lua_isnumber(L, -1)) {
+                                cfg.warnAt.push_back(lua::getNumber<uint32_t>(L, -1));
+                        }
+                        lua_pop(L, 1);
+                }
+        }
+        lua_pop(L, 1);
+
+        lua_getfield(L, 1, "bossNames");
+        if (lua_istable(L, -1)) {
+                size_t length = lua_rawlen(L, -1);
+                cfg.bossNames.reserve(length);
+                for (size_t i = 1; i <= length; ++i) {
+                        lua_rawgeti(L, -1, i);
+                        if (lua_isstring(L, -1)) {
+                                cfg.bossNames.emplace_back(lua::getString(L, -1));
+                        }
+                        lua_pop(L, 1);
+                }
+        }
+        lua_pop(L, 1);
+
+        uint32_t uid = InstanceManager::get().create(cfg);
+        lua_pushnumber(L, uid);
+        return 1;
+}
+
+int LuaScriptInterface::luaBindPlayer(lua_State* L) {
+        uint32_t uid = lua::getNumber<uint32_t>(L, 1);
+        Player* player = lua::getPlayer(L, 2);
+        if (!player) {
+                lua_pushboolean(L, false);
+                lua::pushString(L, "invalid player");
+                return 2;
+        }
+
+        std::string reason;
+        bool result = InstanceManager::get().bindPlayer(player, uid, &reason);
+        lua_pushboolean(L, result);
+        if (result) {
+                return 1;
+        }
+
+        if (reason.empty()) {
+                reason = "unknown reason";
+        }
+        lua::pushString(L, reason);
+        return 2;
+}
+
+int LuaScriptInterface::luaBindParty(lua_State* L) {
+        uint32_t uid = lua::getNumber<uint32_t>(L, 1);
+        Player* leader = lua::getPlayer(L, 2);
+        if (!leader) {
+                lua_pushboolean(L, false);
+                lua::pushString(L, "invalid player");
+                return 2;
+        }
+
+        std::string reason;
+        bool result = InstanceManager::get().bindParty(leader, uid, &reason);
+        lua_pushboolean(L, result);
+        if (result) {
+                return 1;
+        }
+
+        if (reason.empty()) {
+                reason = "unknown reason";
+        }
+        lua::pushString(L, reason);
+        return 2;
+}
+
+int LuaScriptInterface::luaTeleportInto(lua_State* L) {
+        uint32_t uid = lua::getNumber<uint32_t>(L, 1);
+        Player* player = lua::getPlayer(L, 2);
+        if (!player) {
+                lua_pushboolean(L, false);
+                lua::pushString(L, "invalid player");
+                return 2;
+        }
+
+        std::string reason;
+        bool result = InstanceManager::get().teleportInto(uid, player, &reason);
+        lua_pushboolean(L, result);
+        if (result) {
+                return 1;
+        }
+
+        if (reason.empty()) {
+                reason = "teleport failed";
+        }
+        lua::pushString(L, reason);
+        return 2;
+}
+
+int LuaScriptInterface::luaCloseInstance(lua_State* L) {
+        uint32_t uid = lua::getNumber<uint32_t>(L, 1);
+        std::string reason = lua_gettop(L) >= 2 ? lua::getString(L, 2) : std::string("closed via script");
+        lua_pushboolean(L, InstanceManager::get().close(uid, reason));
+        return 1;
+}
+
+int LuaScriptInterface::luaGetActiveInstances(lua_State* L) {
+        lua_newtable(L);
+
+        const auto& instances = InstanceManager::get().list();
+        const time_t now = time(nullptr);
+
+        for (const auto& entry : instances) {
+                lua_pushnumber(L, entry.first);
+                lua_newtable(L);
+
+                setField(L, "uid", static_cast<lua_Number>(entry.first));
+                if (!entry.second.name.empty()) {
+                        setField(L, "name", entry.second.name);
+                }
+                if (!entry.second.mapName.empty()) {
+                        setField(L, "map", entry.second.mapName);
+                }
+                setField(L, "playerCount", static_cast<lua_Number>(entry.second.players.size()));
+
+                if (entry.second.end > 0) {
+                        const int64_t remaining = std::max<int64_t>(0, static_cast<int64_t>(entry.second.end - now));
+                        setField(L, "endsIn", static_cast<lua_Number>(remaining));
+                } else {
+                        setField(L, "endsIn", 0);
+                }
+
+                setField(L, "expMult", entry.second.expMult);
+                setField(L, "lootMult", entry.second.lootMult);
+
+                lua::pushPosition(L, entry.second.entryPos);
+                lua_setfield(L, -2, "entryPos");
+                lua::pushPosition(L, entry.second.exitPos);
+                lua_setfield(L, -2, "exitPos");
+
+                lua_settable(L, -3);
+        }
+
+        return 1;
+}
+
+int LuaScriptInterface::luaPlayerLeaveInstance(lua_State* L) {
+        Player* player = lua::getPlayer(L, 1);
+        if (!player) {
+                lua_pushboolean(L, false);
+                return 1;
+        }
+
+        lua_pushboolean(L, InstanceManager::get().playerLeave(player));
+        return 1;
+}
+#endif
+
 int LuaScriptInterface::luaIsInWar(lua_State* L) {
-	//isInWar(cid, target)
-	Player* player = lua::getPlayer(L, 1);
+        //isInWar(cid, target)
+        Player* player = lua::getPlayer(L, 1);
 	if (!player) {
 		reportErrorFunc(L, lua::getErrorDesc(LUA_ERROR_PLAYER_NOT_FOUND));
 		lua::pushBoolean(L, false);

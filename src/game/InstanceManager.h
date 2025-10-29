@@ -28,6 +28,7 @@ struct InstanceConfig {
         std::vector<std::string> bossNames;
         Position entryPos;
         Position exitPos;
+        std::string mapName;
         bool partyOnly = false;
         uint16_t minLevel = 1;
         uint32_t cooldownSeconds = 0;
@@ -50,6 +51,7 @@ struct ActiveInstance {
         std::unordered_set<uint32_t> players;
         std::unordered_set<uint32_t> creatures;
         std::vector<std::string> bossNames;
+        std::string mapName;
         bool partyOnly = false;
         uint16_t minLevel = 1;
         uint32_t cooldownSeconds = 0;
@@ -63,9 +65,9 @@ class InstanceManager {
                 uint32_t create(const InstanceConfig& cfg);
                 bool bindPlayer(Player* player, uint32_t uid, std::string* reason = nullptr);
                 bool bindParty(Player* leader, uint32_t uid, std::string* reason = nullptr);
-                bool teleportInto(uint32_t uid, Player* playerOrLeader);
+                bool teleportInto(uint32_t uid, Player* playerOrLeader, std::string* reason = nullptr);
                 void onBossDeath(Monster* boss);
-                void close(uint32_t uid, const std::string& reason);
+                bool close(uint32_t uid, const std::string& reason);
                 void heartbeat();
                 const std::map<uint32_t, ActiveInstance>& list() const {
                         return instances;
@@ -76,8 +78,12 @@ class InstanceManager {
         private:
                 InstanceManager() = default;
 
+                bool ensureMapLoaded(const std::string& mapName);
+                static bool isDefaultPosition(const Position& pos);
+
                 uint32_t nextUid = 1;
                 std::map<uint32_t, ActiveInstance> instances;
+                std::unordered_set<std::string> loadedMaps;
 };
 
 #endif // ENABLE_INSTANCING
