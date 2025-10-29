@@ -30,6 +30,13 @@ namespace {
                 "melee", "distance", "shield", "armor", "wand"
         };
 
+        constexpr std::array<slots_t, 4> ARMOR_EVOLUTION_SLOTS {
+                CONST_SLOT_HEAD,
+                CONST_SLOT_ARMOR,
+                CONST_SLOT_LEGS,
+                CONST_SLOT_FEET,
+        };
+
         constexpr size_t toIndex(ConfigManager::EvolutionItemCategory category) {
                 return static_cast<size_t>(category);
         }

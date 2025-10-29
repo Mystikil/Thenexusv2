@@ -260,13 +260,13 @@ bool GlobalEvent::configureEvent(const pugi::xml_node& node) {
 			}
 		}
 
-		time_t current_time = time(nullptr);
-		tm* timeinfo = localtime(&current_time);
-		timeinfo->tm_hour = hour;
-		timeinfo->tm_min = min;
-		timeinfo->tm_sec = sec;
+                time_t current_time = time(nullptr);
+                std::tm timeinfo = getLocalTime(current_time);
+                timeinfo.tm_hour = hour;
+                timeinfo.tm_min = min;
+                timeinfo.tm_sec = sec;
 
-		time_t difference = static_cast<time_t>(difftime(mktime(timeinfo), current_time));
+                time_t difference = static_cast<time_t>(difftime(mktime(&timeinfo), current_time));
 		if (difference < 0) {
 			difference += 86400;
 		}

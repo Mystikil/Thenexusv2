@@ -33,7 +33,13 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#if __has_include(<mysql/mysql.h>)
 #include <mysql/mysql.h>
+#elif __has_include(<mariadb/mysql.h>)
+#include <mariadb/mysql.h>
+#else
+#error "MySQL client headers not found"
+#endif
 #include <optional>
 #include <pugixml.hpp>
 #include <queue>

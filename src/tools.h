@@ -8,6 +8,8 @@
 #include "enums.h"
 #include "position.h"
 
+#include <ctime>
+
 void printXMLError(const std::string& where, const std::string& fileName, const pugi::xml_parse_result& result);
 
 std::string transformToSHA1(std::string_view input);
@@ -38,6 +40,7 @@ Direction getDirectionTo(const Position& from, const Position& to);
 
 std::string getFirstLine(const std::string& str);
 
+std::tm getLocalTime(time_t time);
 std::string formatDate(time_t time);
 std::string formatDateShort(time_t time);
 

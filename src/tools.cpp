@@ -8,6 +8,7 @@
 #include "configmanager.h"
 
 #include <chrono>
+#include <ctime>
 #include <fmt/chrono.h>
 #include <openssl/evp.h>
 
@@ -196,12 +197,22 @@ bool boolean_random(double probability/* = 0.5*/) {
 	return booleanRand(getRandomGenerator(), std::bernoulli_distribution::param_type(probability));
 }
 
+std::tm getLocalTime(time_t time) {
+        std::tm timeinfo {};
+#if defined(_WIN32)
+        localtime_s(&timeinfo, &time);
+#else
+        localtime_r(&time, &timeinfo);
+#endif
+        return timeinfo;
+}
+
 std::string formatDate(time_t time) {
-	return fmt::format("{:%d/%m/%Y %H:%M:%S}", fmt::localtime(time));
+        return fmt::format("{:%d/%m/%Y %H:%M:%S}", getLocalTime(time));
 }
 
 std::string formatDateShort(time_t time) {
-	return fmt::format("{:%d %b %Y}", fmt::localtime(time));
+        return fmt::format("{:%d %b %Y}", getLocalTime(time));
 }
 
 Position getNextPosition(Direction direction, Position pos) {

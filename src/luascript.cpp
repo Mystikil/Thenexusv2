@@ -35,11 +35,12 @@
 #include "storeinbox.h"
 #include "teleport.h"
 #include "weapons.h"
+#include "tools.h"
 
 #include <ranges>
 
 #if LUA_VERSION_NUM < 502
-extern "C" LUALIB_API void luaL_traceback(lua_State* L, lua_State* L1, const char* msg, int level)
+extern "C" void luaL_traceback(lua_State* L, lua_State* L1, const char* msg, int level)
 {
 	lua_Debug ar;
 	std::string buffer;
@@ -16530,13 +16531,13 @@ int LuaScriptInterface::luaGlobalEventTime(lua_State* L) {
 			}
 		}
 
-		time_t current_time = time(nullptr);
-		tm* timeinfo = localtime(&current_time);
-		timeinfo->tm_hour = hour;
-		timeinfo->tm_min = min;
-		timeinfo->tm_sec = sec;
+                time_t current_time = time(nullptr);
+                std::tm timeinfo = getLocalTime(current_time);
+                timeinfo.tm_hour = hour;
+                timeinfo.tm_min = min;
+                timeinfo.tm_sec = sec;
 
-		time_t difference = static_cast<time_t>(difftime(mktime(timeinfo), current_time));
+                time_t difference = static_cast<time_t>(difftime(mktime(&timeinfo), current_time));
 		if (difference < 0) {
 			difference += 86400;
 		}

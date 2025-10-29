@@ -32,6 +32,7 @@
 #include "storeinbox.h"
 #include "talkaction.h"
 #include "weapons.h"
+#include "tools.h"
 
 extern Actions* g_actions;
 extern Chat* g_chat;
@@ -4567,9 +4568,9 @@ void Game::updateWorldTime() {
 	g_scheduler.addEvent(createSchedulerTask(EVENT_WORLDTIMEINTERVAL, [this]() {
 		updateWorldTime();
 	}));
-	time_t osTime = time(nullptr);
-	tm* timeInfo = localtime(&osTime);
-	worldTime = (timeInfo->tm_sec + (timeInfo->tm_min * 60)) / 2.5f;
+        time_t osTime = time(nullptr);
+        std::tm timeInfo = getLocalTime(osTime);
+        worldTime = (timeInfo.tm_sec + (timeInfo.tm_min * 60)) / 2.5f;
 }
 
 void Game::shutdown() {
