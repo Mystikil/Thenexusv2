@@ -1,0 +1,25 @@
+﻿# VS / VC
+.vs/
+*.vcxproj.user
+*.opendb
+*.VC.db
+ipch/
+*.ipch
+
+# Build outputs
+[Bb]in/
+[Oo]bj/
+Debug/
+Release/
+x64/
+*.tlog
+*.log
+
+# Compiled junk
+*.obj
+*.iobj
+*.ipdb
+*.pdb
+*.ilk
+*.pch
+*.idb

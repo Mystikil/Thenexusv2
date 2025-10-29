@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<npcTrading version="1.0">
+    <market baseFee="0.04" baseBuyModifier="1.00" baseSellModifier="1.00" activityWindowHours="6" activityFeePerMillion="0.012" minModifier="0.85" maxModifier="1.25" priceFloor="0.70" priceCeiling="1.40" />
+    <reputation floor="0.55" ceiling="1.45" neutral="1.00" friendly="0.98" honored="0.96" revered="0.94" hated="1.25" disliked="1.10" />
+    <restockDefaults intervalHours="12" percent="0.25" />
+    <dungeonRewards>
+        <dungeon id="embers_citadel" baseGold="600" bonusPerDifficulty="120" pool="Traders Guild" />
+        <dungeon id="crystal_depths" baseGold="450" bonusPerDifficulty="90" pool="Artisan Assembly" />
+        <dungeon id="forgotten_catacombs" baseGold="520" bonusPerDifficulty="110" pool="Central Exchange" />
+    </dungeonRewards>
+    <npc name="Provisioner Riona" tag="surface_provisioner" restockIntervalHours="8" restockPercent="0.40" feeBuy="0.015" feeSell="0.030" reputationFloor="Neutral">
+        <stock itemId="6500" max="12" scarcitySlope="0.55" supplySlope="0.40" keywords="essence" />
+        <stock itemId="25172" max="18" scarcitySlope="0.45" supplySlope="0.30" keywords="hide" />
+        <stock itemId="22449" max="10" restockIntervalHours="6" restockPercent="0.50" scarcitySlope="0.60" supplySlope="0.35" keywords="fang,claw" />
+    </npc>
+    <npc name="Quartermaster Eryn" tag="dungeon_quartermaster" restockIntervalHours="6" restockPercent="0.35" feeBuy="0.020" feeSell="0.025" reputationFloor="Friendly">
+        <stock itemId="22472" max="6" scarcitySlope="0.65" supplySlope="0.40" keywords="essence" minTier="Honored" />
+        <stock itemId="22473" max="4" scarcitySlope="0.70" supplySlope="0.45" keywords="essence" minTier="Revered" />
+        <stock itemId="21500" max="14" keywords="bone,fragment" />
+    </npc>
+    <npc name="Artisan Broker" tag="artisan_broker" restockIntervalHours="10" restockPercent="0.30" feeBuy="0.010" feeSell="0.020" reputationFloor="Neutral">
+        <stock itemId="12636" max="16" scarcitySlope="0.50" supplySlope="0.28" keywords="essence,scale" />
+        <stock itemId="9971" max="8" scarcitySlope="0.40" supplySlope="0.25" keywords="pearl" />
+        <stock itemId="11223" max="10" scarcitySlope="0.55" supplySlope="0.35" keywords="essence" />
+    </npc>
+</npcTrading>

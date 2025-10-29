@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<creaturescripts>
+
+	<event type="login" name="PlayerLogin" script="login.lua" />
+	<event type="logout" name="PlayerLogout" script="logout.lua" />
+	<event type="login" name="FirstItems" script="first_items.lua" />
+	<event type="login" name="OfflineTraining" script="offline_training.lua" />
+	<event type="login" name="RegenerateStamina" script="regenerate_stamina.lua" />
+	<event type="death" name="PlayerDeath" script="player_death.lua" />
+	<event type="death" name="DropLoot" script="drop_loot.lua" />
+	<event type="extendedopcode" name="ExtendedOpcode" script="extended_opcode.lua" />
+  
+  <!-- Optional fallback only if your fork emits statschange; otherwise OMIT this line -->
+  <!-- <event type="statschange"  name="nx_rank_scale2" script="nx_rank_scalers.lua"/> -->
+
+  <!-- RANK SCALERS: keep these -->
+  <event type="healthchange" name="nx_rank_scale"  script="nx_rank_scalers.lua"/>
+  <event type="death"        name="nx_rank_scale"  script="nx_rank_scalers.lua"/>
+  <event type="kill"         name="FactionReputationKill" script="reputation_kill.lua"/>
+
+
+  <!-- BOSS AI: keep only types your fork supports -->
+  <event type="think"        name="nx_boss_think"  script="nx_boss_think.lua"/>
+  <event type="healthchange" name="nx_boss_hit"    script="nx_boss_think.lua"/>
+  <event type="death"        name="nx_boss_death"  script="nx_boss_think.lua"/>
+
+  <event type="think" name="MonsterRankThink" script="monster/monster_rank.lua"/>
+  <event type="death" name="MonsterRankDeath" script="monster/monster_rank.lua"/>
+
+  <!-- REMOVE these (your fork doesn’t support their types):
+       <event type="spawn" name="nx_rank_apply"  script="nx_rank_apply.lua"/>
+       <event type="look"  name="nx_rank_look"   script="nx_rank_look.lua"/>
+       <event type="look"  name="SerialOnLook"   script="serial_on_look.lua"/>
+       <event type="spawn" name="nx_boss_spawn"  script="nx_boss_think.lua"/>
+       <event type="target" name="nx_boss_target" script="nx_boss_think.lua"/>
+  -->
+</creaturescripts>
