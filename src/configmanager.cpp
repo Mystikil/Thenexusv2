@@ -7,6 +7,7 @@
 #include "game.h"
 #include "monster.h"
 #include "pugicast.h"
+#include "tools.h"
 
 #if __has_include("luajit/lua.hpp")
 #include <luajit/lua.hpp>
@@ -28,7 +29,198 @@ namespace {
 	std::array<bool, ConfigManager::LAST_BOOLEAN_CONFIG> boolean = {};
 
 	using ExperienceStages = std::vector<std::tuple<uint32_t, uint32_t, float>>;
-	ExperienceStages expStages;
+        ExperienceStages expStages;
+        ConfigManager::WeaponEvolutionConfig weaponEvolutionConfig;
+
+        constexpr std::array<std::string_view, static_cast<size_t>(ConfigManager::EvolutionItemCategory::LAST)> categoryKeys {
+                "melee", "distance", "shield", "armor", "wand"
+        };
+
+        bool parseCategory(std::string_view value, ConfigManager::EvolutionItemCategory& outCategory) {
+                for (size_t index = 0; index < categoryKeys.size(); ++index) {
+                        if (caseInsensitiveEqual(value, categoryKeys[index])) {
+                                outCategory = static_cast<ConfigManager::EvolutionItemCategory>(index);
+                                return true;
+                        }
+                }
+                return false;
+        }
+
+        std::vector<std::string> readStringArray(lua_State* L, int tableIndex) {
+                std::vector<std::string> values;
+                lua_pushnil(L);
+                while (lua_next(L, tableIndex) != 0) {
+                        if (lua_isstring(L, -1)) {
+                                size_t len = lua_strlen(L, -1);
+                                values.emplace_back(lua_tostring(L, -1), len);
+                        }
+                        lua_pop(L, 1);
+                }
+                return values;
+        }
+
+        std::vector<ConfigManager::EvolutionStageConfig> readStageArray(lua_State* L, int tableIndex) {
+                std::vector<ConfigManager::EvolutionStageConfig> stages;
+                lua_pushnil(L);
+                while (lua_next(L, tableIndex) != 0) {
+                        if (lua_istable(L, -1)) {
+                                int stageIndex = lua_gettop(L);
+                                ConfigManager::EvolutionStageConfig stage;
+                                stage.xpRequired = lua::getField<uint32_t>(L, stageIndex, "xp", 0);
+                                lua_pop(L, 1);
+                                stage.attackBonus = lua::getField<int32_t>(L, stageIndex, "attack", 0);
+                                lua_pop(L, 1);
+                                stage.defenseBonus = lua::getField<int32_t>(L, stageIndex, "defense", 0);
+                                lua_pop(L, 1);
+                                stage.extraDefenseBonus = lua::getField<int32_t>(L, stageIndex, "extraDefense", 0);
+                                lua_pop(L, 1);
+                                stage.armorBonus = lua::getField<int32_t>(L, stageIndex, "armor", 0);
+                                lua_pop(L, 1);
+                                stage.wandMinBonus = lua::getField<int32_t>(L, stageIndex, "minMagic", 0);
+                                lua_pop(L, 1);
+                                stage.wandMaxBonus = lua::getField<int32_t>(L, stageIndex, "maxMagic", static_cast<int32_t>(stage.wandMinBonus));
+                                lua_pop(L, 1);
+                                stages.emplace_back(stage);
+                        }
+                        lua_pop(L, 1);
+                }
+
+                std::sort(stages.begin(), stages.end(), [](const auto& a, const auto& b) {
+                        return a.xpRequired < b.xpRequired;
+                });
+
+                if (stages.empty() || stages.front().xpRequired != 0) {
+                        stages.insert(stages.begin(), ConfigManager::EvolutionStageConfig{});
+                }
+
+                return stages;
+        }
+
+        void loadWeaponEvolutionConfig(lua_State* L) {
+                weaponEvolutionConfig = ConfigManager::WeaponEvolutionConfig{};
+
+                lua_getglobal(L, "weaponEvolution");
+                if (!lua_istable(L, -1)) {
+                        lua_pop(L, 1);
+                        return;
+                }
+
+                weaponEvolutionConfig.enabled = lua::getField<bool>(L, -1, "enabled", false);
+                lua_pop(L, 1);
+
+                lua_getfield(L, -1, "xpPerUse");
+                if (lua_istable(L, -1)) {
+                        lua_pushnil(L);
+                        while (lua_next(L, -2) != 0) {
+                                if (lua_isstring(L, -2)) {
+                                        size_t len = lua_strlen(L, -2);
+                                        std::string key(lua_tostring(L, -2), len);
+                                        ConfigManager::EvolutionItemCategory category;
+                                        if (parseCategory(key, category)) {
+                                                auto& config = weaponEvolutionConfig.categories[static_cast<size_t>(category)];
+                                                config.xpPerUse = std::max<int32_t>(0, lua_tointeger(L, -1));
+                                        }
+                                }
+                                lua_pop(L, 1);
+                        }
+                }
+                lua_pop(L, 1);
+
+                lua_getfield(L, -1, "stages");
+                if (lua_istable(L, -1)) {
+                        lua_pushnil(L);
+                        while (lua_next(L, -2) != 0) {
+                                if (lua_isstring(L, -2) && lua_istable(L, -1)) {
+                                        size_t len = lua_strlen(L, -2);
+                                        std::string key(lua_tostring(L, -2), len);
+                                        ConfigManager::EvolutionItemCategory category;
+                                        if (parseCategory(key, category)) {
+                                                int stagesIndex = lua_gettop(L);
+                                                weaponEvolutionConfig.categories[static_cast<size_t>(category)].stages = readStageArray(L, stagesIndex);
+                                        }
+                                }
+                                lua_pop(L, 1);
+                        }
+                }
+                lua_pop(L, 1);
+
+                lua_getfield(L, -1, "names");
+                if (lua_istable(L, -1)) {
+                        int namesIndex = lua_gettop(L);
+                        for (size_t index = 0; index < categoryKeys.size(); ++index) {
+                                lua_getfield(L, namesIndex, std::string(categoryKeys[index]).c_str());
+                                if (lua_istable(L, -1)) {
+                                        weaponEvolutionConfig.categories[index].baseNames = readStringArray(L, lua_gettop(L));
+                                }
+                                lua_pop(L, 1);
+                        }
+
+                        lua_getfield(L, namesIndex, "prefixes");
+                        if (lua_istable(L, -1)) {
+                                weaponEvolutionConfig.names.prefixes = readStringArray(L, lua_gettop(L));
+                        }
+                        lua_pop(L, 1);
+
+                        lua_getfield(L, namesIndex, "suffixes");
+                        if (lua_istable(L, -1)) {
+                                weaponEvolutionConfig.names.suffixes = readStringArray(L, lua_gettop(L));
+                        }
+                        lua_pop(L, 1);
+
+                        lua_getfield(L, namesIndex, "tiers");
+                        if (lua_istable(L, -1)) {
+                                weaponEvolutionConfig.names.tierNames = readStringArray(L, lua_gettop(L));
+                        }
+                        lua_pop(L, 1);
+
+                        lua_getfield(L, namesIndex, "materials");
+                        if (lua_istable(L, -1)) {
+                                weaponEvolutionConfig.names.materials = readStringArray(L, lua_gettop(L));
+                        }
+                        lua_pop(L, 1);
+
+                        lua_getfield(L, namesIndex, "corrupted");
+                        if (lua_istable(L, -1)) {
+                                int corruptedIndex = lua_gettop(L);
+                                for (size_t index = 0; index < categoryKeys.size(); ++index) {
+                                        lua_getfield(L, corruptedIndex, std::string(categoryKeys[index]).c_str());
+                                        if (lua_istable(L, -1)) {
+                                                weaponEvolutionConfig.names.corrupted[index] = readStringArray(L, lua_gettop(L));
+                                        }
+                                        lua_pop(L, 1);
+                                }
+                        }
+                        lua_pop(L, 1);
+                }
+                lua_pop(L, 1);
+
+                lua_pop(L, 1); // weaponEvolution table
+
+                for (auto& category : weaponEvolutionConfig.categories) {
+                        if (category.xpPerUse == 0) {
+                                category.xpPerUse = 1;
+                        }
+                        if (category.stages.empty()) {
+                                category.stages.emplace_back();
+                        }
+                }
+
+                if (weaponEvolutionConfig.names.tierNames.empty()) {
+                        weaponEvolutionConfig.names.tierNames.emplace_back("Initiate");
+                }
+
+                auto& meleeNames = weaponEvolutionConfig.categories[static_cast<size_t>(ConfigManager::EvolutionItemCategory::MELEE)].baseNames;
+                auto& distanceNames = weaponEvolutionConfig.categories[static_cast<size_t>(ConfigManager::EvolutionItemCategory::DISTANCE)].baseNames;
+                if (distanceNames.empty() && !meleeNames.empty()) {
+                        distanceNames = meleeNames;
+                }
+
+                auto& meleeCorrupted = weaponEvolutionConfig.names.corrupted[static_cast<size_t>(ConfigManager::EvolutionItemCategory::MELEE)];
+                auto& distanceCorrupted = weaponEvolutionConfig.names.corrupted[static_cast<size_t>(ConfigManager::EvolutionItemCategory::DISTANCE)];
+                if (distanceCorrupted.empty() && !meleeCorrupted.empty()) {
+                        distanceCorrupted = meleeCorrupted;
+                }
+        }
 
 	bool loaded = false;
 
@@ -282,10 +474,12 @@ bool ConfigManager::load() {
 	} else {
 		std::cout << "[Warning - ConfigManager::load] XML stages are deprecated, consider moving to config.lua." << std::endl;
 	}
-	expStages.shrink_to_fit();
+        expStages.shrink_to_fit();
 
-	loaded = true;
-	lua_close(L);
+        loadWeaponEvolutionConfig(L);
+
+        loaded = true;
+        lua_close(L);
 
 	return true;
 }
@@ -325,16 +519,20 @@ bool ConfigManager::getBoolean(boolean_config_t what) {
 }
 
 float ConfigManager::getExperienceStage(uint32_t level) {
-	auto it = std::find_if(expStages.begin(), expStages.end(), [level](auto&& stage) {
-		auto&& [minLevel, maxLevel, _] = stage;
-		return level >= minLevel && level <= maxLevel;
-	});
+        auto it = std::find_if(expStages.begin(), expStages.end(), [level](auto&& stage) {
+                auto&& [minLevel, maxLevel, _] = stage;
+                return level >= minLevel && level <= maxLevel;
+        });
 
-	if (it == expStages.end()) {
-		return getNumber(ConfigManager::RATE_EXPERIENCE);
-	}
+        if (it == expStages.end()) {
+                return getNumber(ConfigManager::RATE_EXPERIENCE);
+        }
 
-	return std::get<2>(*it);
+        return std::get<2>(*it);
+}
+
+const ConfigManager::WeaponEvolutionConfig& ConfigManager::getWeaponEvolutionConfig() {
+        return weaponEvolutionConfig;
 }
 
 bool ConfigManager::setString(string_config_t what, std::string_view value) {

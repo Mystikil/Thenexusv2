@@ -5,10 +5,17 @@
 
 #include "monster.h"
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
+
+#include <boost/algorithm/string.hpp>
+
 #include "condition.h"
 #include "configmanager.h"
 #include "events.h"
 #include "game.h"
+#include "spawn.h"
 #include "spectators.h"
 #include "spells.h"
 
@@ -20,6 +27,21 @@ int32_t Monster::despawnRadius;
 
 uint32_t Monster::monsterAutoID = 0x40000000;
 
+namespace {
+
+bool parseMonsterRankName(const std::string& rankName, MonsterRank& outRank) {
+        std::string upperRank = boost::algorithm::to_upper_copy(rankName);
+        for (const auto& data : MONSTER_RANK_TABLE) {
+                if (upperRank == data.name) {
+                        outRank = data.rank;
+                        return true;
+                }
+        }
+        return false;
+}
+
+} // namespace
+
 Monster* Monster::createMonster(const std::string& name) {
 	MonsterType* mType = g_monsters.getMonsterType(name);
 	if (!mType) {
@@ -29,22 +51,21 @@ Monster* Monster::createMonster(const std::string& name) {
 }
 
 Monster::Monster(MonsterType* mType) :
-	Creature(),
-	nameDescription(mType->nameDescription),
-	mType(mType) {
-	defaultOutfit = mType->info.outfit;
-	currentOutfit = mType->info.outfit;
-	skull = mType->info.skull;
-	health = mType->info.health;
-	healthMax = mType->info.healthMax;
-	baseSpeed = mType->info.baseSpeed;
-	internalLight = mType->info.light;
-	hiddenHealth = mType->info.hiddenHealth;
+        Creature(),
+        nameDescription(mType->nameDescription),
+        mType(mType) {
+        defaultOutfit = mType->info.outfit;
+        currentOutfit = mType->info.outfit;
+        skull = mType->info.skull;
+        internalLight = mType->info.light;
+        hiddenHealth = mType->info.hiddenHealth;
 
-	// register creature events
-	for (const std::string& scriptName : mType->info.scripts) {
-		if (!registerCreatureEvent(scriptName)) {
-			std::cout << "[Warning - Monster::Monster] Unknown event name: " << scriptName << std::endl;
+        setRank(MonsterRank::F);
+
+        // register creature events
+        for (const std::string& scriptName : mType->info.scripts) {
+                if (!registerCreatureEvent(scriptName)) {
+                        std::cout << "[Warning - Monster::Monster] Unknown event name: " << scriptName << std::endl;
 		}
 	}
 }
@@ -59,7 +80,59 @@ void Monster::addList() {
 }
 
 void Monster::removeList() {
-	g_game.removeMonster(this);
+        g_game.removeMonster(this);
+}
+
+void Monster::setSpawn(Spawn* newSpawn, uint32_t spawnId) {
+        spawn = newSpawn;
+        spawnBlockId = newSpawn ? spawnId : 0;
+}
+
+std::string Monster::getDescription(int32_t) const {
+        std::string description = nameDescription;
+        if (!description.empty() && description.back() != '.') {
+                description.push_back('.');
+        }
+        description.append(" Its Rank is ");
+        description.append(getRankName());
+        description.push_back('.');
+        return description;
+}
+
+std::string Monster::getRankName() const {
+        return std::string(monsterRankToString(rank));
+}
+
+void Monster::setRank(MonsterRank newRank) {
+        const uint32_t previousSpeed = getBaseSpeed();
+        rank = newRank;
+        applyRankData();
+
+        if (!isRemoved()) {
+                const int32_t speedDiff = static_cast<int32_t>(getBaseSpeed()) - static_cast<int32_t>(previousSpeed);
+                if (speedDiff != 0) {
+                        g_game.changeSpeed(this, speedDiff);
+                }
+        }
+}
+
+bool Monster::setRank(const std::string& rankName) {
+        MonsterRank parsedRank;
+        if (!parseMonsterRankName(rankName, parsedRank)) {
+                return false;
+        }
+
+        setRank(parsedRank);
+        return true;
+}
+
+std::vector<LootBlock> Monster::getRankLoot() const {
+        std::vector<LootBlock> loot;
+        loot.reserve(mType->info.lootItems.size());
+        for (const auto& block : mType->info.lootItems) {
+                loot.emplace_back(buildRankLootBlock(block));
+        }
+        return loot;
 }
 
 const std::string& Monster::getName() const {
@@ -826,8 +899,8 @@ void Monster::doAttacking(uint32_t interval) {
 					lookUpdated = true;
 				}
 
-				minCombatValue = spellBlock.minCombatValue;
-				maxCombatValue = spellBlock.maxCombatValue;
+                                minCombatValue = scaleDamageValue(spellBlock.minCombatValue);
+                                maxCombatValue = scaleDamageValue(spellBlock.maxCombatValue);
 				spellBlock.spell->castSpell(this, attackedCreature);
 
 				if (spellBlock.isMelee) {
@@ -957,8 +1030,8 @@ void Monster::onThinkDefense(uint32_t interval) {
 		}
 
 		if ((spellBlock.chance >= static_cast<uint32_t>(uniform_random(1, 100)))) {
-			minCombatValue = spellBlock.minCombatValue;
-			maxCombatValue = spellBlock.maxCombatValue;
+                        minCombatValue = scaleDamageValue(spellBlock.minCombatValue);
+                        maxCombatValue = scaleDamageValue(spellBlock.maxCombatValue);
 			spellBlock.spell->castSpell(this, this);
 		}
 	}
@@ -1833,11 +1906,15 @@ bool Monster::canWalkTo(Position pos, Direction direction) const {
 }
 
 void Monster::death(Creature*) {
-	removeAttackedCreature();
+        if (spawn) {
+                spawn->registerKill(spawnBlockId, rank);
+        }
 
-	for (Creature* summon : summons) {
-		summon->changeHealth(-summon->getHealth());
-		summon->removeMaster();
+        removeAttackedCreature();
+
+        for (Creature* summon : summons) {
+                summon->changeHealth(-summon->getHealth());
+                summon->removeMaster();
 	}
 	summons.clear();
 
@@ -1888,13 +1965,90 @@ bool Monster::isInSpawnRange(const Position& pos) const {
 }
 
 bool Monster::getCombatValues(int32_t& min, int32_t& max) {
-	if (minCombatValue == 0 && maxCombatValue == 0) {
-		return false;
-	}
+        if (minCombatValue == 0 && maxCombatValue == 0) {
+                return false;
+        }
 
-	min = minCombatValue;
-	max = maxCombatValue;
-	return true;
+        min = minCombatValue;
+        max = maxCombatValue;
+        return true;
+}
+
+void Monster::applyRankData() {
+        const MonsterRankData& data = getMonsterRankData(rank);
+
+        rankDamageMultiplier = data.damageMultiplier;
+        rankLootMultiplier = data.lootMultiplier;
+
+        const auto scaleInt = [](double value, double multiplier, auto maxValue) {
+                const long double scaled = static_cast<long double>(value) * static_cast<long double>(multiplier);
+                const long double clamped = std::clamp<long double>(scaled, 0.0L, static_cast<long double>(maxValue));
+                return clamped;
+        };
+
+        const long double maxInt32 = static_cast<long double>(std::numeric_limits<int32_t>::max());
+
+        const long double scaledHealthMax = scaleInt(static_cast<double>(mType->info.healthMax), data.healthMultiplier, maxInt32);
+        const long double scaledHealth = scaleInt(static_cast<double>(mType->info.health), data.healthMultiplier, maxInt32);
+
+        healthMax = std::max<int32_t>(1, static_cast<int32_t>(std::llround(scaledHealthMax)));
+        health = std::max<int32_t>(1, std::min<int32_t>(healthMax, static_cast<int32_t>(std::llround(scaledHealth))));
+
+        const long double scaledRunAway = scaleInt(static_cast<double>(mType->info.runAwayHealth), data.healthMultiplier, maxInt32);
+        fleeHealthThreshold = std::max<int32_t>(0, static_cast<int32_t>(std::llround(scaledRunAway)));
+
+        const long double scaledDefense = scaleInt(static_cast<double>(mType->info.defense), data.defenseMultiplier, maxInt32);
+        defenseValue = std::max<int32_t>(0, static_cast<int32_t>(std::llround(scaledDefense)));
+
+        const long double scaledArmor = scaleInt(static_cast<double>(mType->info.armor), data.defenseMultiplier, maxInt32);
+        armorValue = std::max<int32_t>(0, static_cast<int32_t>(std::llround(scaledArmor)));
+
+        const long double scaledSpeed = scaleInt(static_cast<double>(mType->info.baseSpeed), data.speedMultiplier,
+                                                 static_cast<long double>(std::numeric_limits<uint32_t>::max()));
+        setBaseSpeed(static_cast<uint32_t>(std::llround(scaledSpeed)));
+
+        if (mType->info.experience == 0) {
+                rankExperience = 0;
+        } else {
+                const long double scaledExperience = static_cast<long double>(mType->info.experience) *
+                                                     static_cast<long double>(data.experienceMultiplier);
+                const long double clampedExperience = std::min<long double>(scaledExperience,
+                                                                            static_cast<long double>(std::numeric_limits<uint64_t>::max()));
+                rankExperience = std::max<uint64_t>(1, static_cast<uint64_t>(std::llround(clampedExperience)));
+        }
+}
+
+LootBlock Monster::buildRankLootBlock(const LootBlock& lootBlock) const {
+        LootBlock adjusted = lootBlock;
+
+        const long double scaledChance = static_cast<long double>(lootBlock.chance) * static_cast<long double>(rankLootMultiplier);
+        const long double cappedChance = std::min<long double>(scaledChance, static_cast<long double>(MAX_LOOTCHANCE));
+        adjusted.chance = static_cast<uint32_t>(std::llround(cappedChance));
+
+        const long double scaledCount = static_cast<long double>(lootBlock.countmax) * static_cast<long double>(rankLootMultiplier);
+        const long double clampedCount = std::clamp<long double>(scaledCount, 1.0L,
+                                                                 static_cast<long double>(std::numeric_limits<uint32_t>::max()));
+        adjusted.countmax = static_cast<uint32_t>(std::llround(clampedCount));
+
+        adjusted.childLoot.clear();
+        adjusted.childLoot.reserve(lootBlock.childLoot.size());
+        for (const auto& child : lootBlock.childLoot) {
+                adjusted.childLoot.emplace_back(buildRankLootBlock(child));
+        }
+
+        return adjusted;
+}
+
+int32_t Monster::scaleDamageValue(int32_t value) const {
+        if (value == 0) {
+                return 0;
+        }
+
+        const long double scaled = static_cast<long double>(value) * static_cast<long double>(rankDamageMultiplier);
+        const long double clamped = std::clamp<long double>(scaled,
+                                                            static_cast<long double>(std::numeric_limits<int32_t>::min()),
+                                                            static_cast<long double>(std::numeric_limits<int32_t>::max()));
+        return static_cast<int32_t>(std::llround(clamped));
 }
 
 void Monster::updateLookDirection() {

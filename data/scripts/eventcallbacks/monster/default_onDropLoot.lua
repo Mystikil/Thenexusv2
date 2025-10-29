@@ -14,7 +14,7 @@ event.onDropLoot = function(self, corpse)
 	end
 
 	if doCreateLoot then
-		local monsterLoot = mType:getLoot()
+                local monsterLoot = self.getRankLoot and self:getRankLoot() or mType:getLoot()
 		for i = 1, #monsterLoot do
 			local item = corpse:createLootItem(monsterLoot[i])
 			if not item then

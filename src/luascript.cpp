@@ -18,6 +18,7 @@
 #include "inbox.h"
 #include "iologindata.h"
 #include "iomapserialize.h"
+#include "itemevolution.h"
 #include "luavariant.h"
 #include "matrixarea.h"
 #include "monster.h"
@@ -36,6 +37,43 @@
 #include "weapons.h"
 
 #include <ranges>
+
+#if LUA_VERSION_NUM < 502
+extern "C" LUALIB_API void luaL_traceback(lua_State* L, lua_State* L1, const char* msg, int level)
+{
+	lua_Debug ar;
+	std::string buffer;
+	if (msg && *msg != '\0') {
+		buffer += msg;
+		buffer += '\n';
+	}
+	buffer += "stack traceback:";
+	while (lua_getstack(L1, level++, &ar) != 0) {
+		if (lua_getinfo(L1, "Sln", &ar) == 0) {
+			break;
+		}
+		buffer += "\n\t";
+		buffer += ar.short_src;
+		if (ar.currentline > 0) {
+			buffer += ':';
+			buffer += std::to_string(ar.currentline);
+		}
+		buffer += ": ";
+		if (ar.namewhat && *ar.namewhat != '\0') {
+			buffer += ar.namewhat;
+			buffer += ' ';
+		}
+		if (ar.name && *ar.name != '\0') {
+			buffer += ar.name;
+		} else if (ar.what && *ar.what != '\0') {
+			buffer += ar.what;
+		} else {
+			buffer += "?";
+		}
+	}
+	lua_pushlstring(L, buffer.c_str(), buffer.size());
+}
+#endif
 
 extern Chat* g_chat;
 extern Game g_game;
@@ -2642,7 +2680,8 @@ void LuaScriptInterface::registerFunctions() {
 	registerMethod(L, "Player", "openChannel", LuaScriptInterface::luaPlayerOpenChannel);
 	registerMethod(L, "Player", "closeChannel", LuaScriptInterface::luaPlayerCloseChannel);
 
-	registerMethod(L, "Player", "getSlotItem", LuaScriptInterface::luaPlayerGetSlotItem);
+        registerMethod(L, "Player", "getSlotItem", LuaScriptInterface::luaPlayerGetSlotItem);
+        registerMethod(L, "Player", "getEvolutionItemProgress", LuaScriptInterface::luaPlayerGetEvolutionItemProgress);
 
 	registerMethod(L, "Player", "getParty", LuaScriptInterface::luaPlayerGetParty);
 
@@ -2723,12 +2762,15 @@ void LuaScriptInterface::registerFunctions() {
 	registerClass(L, "Monster", "Creature", LuaScriptInterface::luaMonsterCreate);
 	registerMetaMethod(L, "Monster", "__eq", LuaScriptInterface::luaUserdataCompare);
 
-	registerMethod(L, "Monster", "isMonster", LuaScriptInterface::luaMonsterIsMonster);
+        registerMethod(L, "Monster", "isMonster", LuaScriptInterface::luaMonsterIsMonster);
 
-	registerMethod(L, "Monster", "getId", LuaScriptInterface::luaMonsterGetId);
-	registerMethod(L, "Monster", "getType", LuaScriptInterface::luaMonsterGetType);
+        registerMethod(L, "Monster", "getId", LuaScriptInterface::luaMonsterGetId);
+        registerMethod(L, "Monster", "getType", LuaScriptInterface::luaMonsterGetType);
 
-	registerMethod(L, "Monster", "rename", LuaScriptInterface::luaMonsterRename);
+        registerMethod(L, "Monster", "rename", LuaScriptInterface::luaMonsterRename);
+        registerMethod(L, "Monster", "getRank", LuaScriptInterface::luaMonsterGetRank);
+        registerMethod(L, "Monster", "setRank", LuaScriptInterface::luaMonsterSetRank);
+        registerMethod(L, "Monster", "getRankLoot", LuaScriptInterface::luaMonsterGetRankLoot);
 
 	registerMethod(L, "Monster", "getSpawnPosition", LuaScriptInterface::luaMonsterGetSpawnPosition);
 	registerMethod(L, "Monster", "isInSpawnRange", LuaScriptInterface::luaMonsterIsInSpawnRange);
@@ -9555,28 +9597,65 @@ int LuaScriptInterface::luaPlayerCloseChannel(lua_State* L) {
 }
 
 int LuaScriptInterface::luaPlayerGetSlotItem(lua_State* L) {
-	// player:getSlotItem(slot)
-	const Player* player = lua::getUserdata<const Player>(L, 1);
-	if (!player) {
-		lua_pushnil(L);
-		return 1;
-	}
+        // player:getSlotItem(slot)
+        const Player* player = lua::getUserdata<const Player>(L, 1);
+        if (!player) {
+                lua_pushnil(L);
+                return 1;
+        }
 
-	uint32_t slot = lua::getNumber<uint32_t>(L, 2);
-	Thing* thing = player->getThing(slot);
-	if (!thing) {
-		lua_pushnil(L);
-		return 1;
-	}
+        uint32_t slot = lua::getNumber<uint32_t>(L, 2);
+        Thing* thing = player->getThing(slot);
+        if (!thing) {
+                lua_pushnil(L);
+                return 1;
+        }
 
-	Item* item = thing->getItem();
-	if (item) {
-		lua::pushUserdata(L, item);
-		lua::setItemMetatable(L, -1, item);
-	} else {
-		lua_pushnil(L);
-	}
-	return 1;
+        Item* item = thing->getItem();
+        if (item) {
+                lua::pushUserdata(L, item);
+                lua::setItemMetatable(L, -1, item);
+        } else {
+                lua_pushnil(L);
+        }
+        return 1;
+}
+
+int LuaScriptInterface::luaPlayerGetEvolutionItemProgress(lua_State* L) {
+        // player:getEvolutionItemProgress(slot)
+        Player* player = lua::getUserdata<Player>(L, 1);
+        if (!player) {
+                lua_pushnil(L);
+                return 1;
+        }
+
+        const slots_t slot = lua::getNumber<slots_t>(L, 2);
+        Item* item = player->getInventoryItem(slot);
+        if (!item) {
+                lua_pushnil(L);
+                return 1;
+        }
+
+        ItemEvolution::EvolutionProgress progress;
+        if (!g_itemEvolution.getProgressInfo(player, item, slot, progress)) {
+                lua_pushnil(L);
+                return 1;
+        }
+
+        lua_createtable(L, 0, 0);
+        setField(L, "itemName", progress.itemName);
+        setField(L, "category", progress.categoryName);
+        setField(L, "rankText", progress.rankText);
+        setField(L, "stage", static_cast<lua_Number>(progress.stage));
+        setField(L, "maxStage", static_cast<lua_Number>(progress.maxStage));
+        setField(L, "stageCount", static_cast<lua_Number>(progress.stageCount));
+        setField(L, "experience", static_cast<lua_Number>(progress.experience));
+        setField(L, "currentThreshold", static_cast<lua_Number>(progress.currentThreshold));
+        setField(L, "nextThreshold", static_cast<lua_Number>(progress.nextThreshold));
+        lua_pushboolean(L, progress.atMaxStage);
+        lua_setfield(L, -2, "atMaxStage");
+        setField(L, "slot", static_cast<lua_Number>(slot));
+        return 1;
 }
 
 int LuaScriptInterface::luaPlayerGetParty(lua_State* L) {
@@ -10459,20 +10538,62 @@ int LuaScriptInterface::luaMonsterGetType(lua_State* L) {
 }
 
 int LuaScriptInterface::luaMonsterRename(lua_State* L) {
-	// monster:rename(name[, nameDescription])
-	Monster* monster = lua::getUserdata<Monster>(L, 1);
-	if (!monster) {
-		lua_pushnil(L);
-		return 1;
-	}
+        // monster:rename(name[, nameDescription])
+        Monster* monster = lua::getUserdata<Monster>(L, 1);
+        if (!monster) {
+                lua_pushnil(L);
+                return 1;
+        }
 
-	monster->setName(lua::getString(L, 2));
-	if (lua_gettop(L) >= 3) {
-		monster->setNameDescription(lua::getString(L, 3));
-	}
+        monster->setName(lua::getString(L, 2));
+        if (lua_gettop(L) >= 3) {
+                monster->setNameDescription(lua::getString(L, 3));
+        }
 
-	lua::pushBoolean(L, true);
-	return 1;
+        lua::pushBoolean(L, true);
+        return 1;
+}
+
+int LuaScriptInterface::luaMonsterGetRank(lua_State* L) {
+        // monster:getRank()
+        Monster* monster = lua::getUserdata<Monster>(L, 1);
+        if (!monster) {
+                lua_pushnil(L);
+                return 1;
+        }
+
+        lua::pushString(L, monster->getRankName());
+        return 1;
+}
+
+int LuaScriptInterface::luaMonsterSetRank(lua_State* L) {
+        // monster:setRank(rankName)
+        Monster* monster = lua::getUserdata<Monster>(L, 1);
+        if (!monster) {
+                lua_pushboolean(L, false);
+                return 1;
+        }
+
+        if (lua_gettop(L) < 2) {
+                lua_pushboolean(L, false);
+                return 1;
+        }
+
+        lua::pushBoolean(L, monster->setRank(lua::getString(L, 2)));
+        return 1;
+}
+
+int LuaScriptInterface::luaMonsterGetRankLoot(lua_State* L) {
+        // monster:getRankLoot()
+        Monster* monster = lua::getUserdata<Monster>(L, 1);
+        if (!monster) {
+                lua_pushnil(L);
+                return 1;
+        }
+
+        auto loot = monster->getRankLoot();
+        pushLoot(L, loot);
+        return 1;
 }
 
 int LuaScriptInterface::luaMonsterGetSpawnPosition(lua_State* L) {

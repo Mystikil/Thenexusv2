@@ -1,4 +1,5 @@
 -- Combat settings
+
 -- NOTE: valid values for worldType are: "pvp", "no-pvp" and "pvp-enforced"
 worldType = "pvp"
 hotkeyAimbotEnabled = true
@@ -73,9 +74,9 @@ checkExpiredMarketOffersEachMinutes = 60
 maxMarketOffersAtATimePerPlayer = 100
 
 -- MySQL
-mysqlHost = "127.0.0.1"
-mysqlUser = "forgottenserver"
-mysqlPass = ""
+mysqlHost = "75.88.83.48"
+mysqlUser = "tfs"
+mysqlPass = "ChangeThis#Now1"
 mysqlDatabase = "forgottenserver"
 mysqlPort = 3306
 mysqlSock = ""

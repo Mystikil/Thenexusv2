@@ -1,10 +1,24 @@
 local event = Event()
 
 event.onLook = function(self, thing, position, distance, description)
-	local description = "You see " .. thing:getDescription(distance)
-	if self:getGroup():getAccess() then
-		if thing:isItem() then
-			description = string.format("%s\nItem ID: %d", description, thing:getId())
+        local baseDescription = thing:getDescription(distance)
+        if thing:isMonster() and thing.getRank then
+                baseDescription = baseDescription:gsub("%s+Its rank is [^%.]+%.?", "")
+                baseDescription = baseDescription:gsub("%s+Its Rank is [^%.]+%.?", "")
+        end
+
+        local description = "You see " .. baseDescription
+
+        if thing:isMonster() and thing.getRank then
+                local rank = thing:getRank()
+                if rank and rank ~= "" then
+                        description = string.format("%s\nIts Rank is %s.", description, rank)
+                end
+        end
+
+        if self:getGroup():getAccess() then
+                if thing:isItem() then
+                        description = string.format("%s\nItem ID: %d", description, thing:getId())
 
 			local actionId = thing:getActionId()
 			if actionId ~= 0 then
