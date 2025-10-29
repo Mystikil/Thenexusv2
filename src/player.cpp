@@ -24,6 +24,10 @@
 #include "storeinbox.h"
 #include "weapons.h"
 
+#ifdef WITH_PYTHON
+#include "python/PythonEngine.h"
+#endif
+
 extern Game g_game;
 extern Chat* g_chat;
 extern Vocations g_vocations;
@@ -3408,10 +3412,17 @@ void Player::onIdleStatus() {
 }
 
 void Player::onPlacedCreature() {
-	//scripting event - onLogin
-	if (!g_creatureEvents->playerLogin(this)) {
-		kickPlayer(true);
-	}
+        //scripting event - onLogin
+        if (!g_creatureEvents->playerLogin(this)) {
+                kickPlayer(true);
+                return;
+        }
+
+#ifdef WITH_PYTHON
+        if (ConfigManager::getBoolean(ConfigManager::PYTHON_ENABLED) && PythonEngine::instance().isReady()) {
+                PythonEngine::instance().onPlayerLogin(getGUID(), getName());
+        }
+#endif
 }
 
 void Player::onAttackedCreatureDrainHealth(Creature* target, int32_t points) {

@@ -48,6 +48,7 @@ namespace ConfigManager {
                 MONSTER_OVERSPAWN,
                 ENABLE_REPUTATION_SYSTEM,
                 ENABLE_ECONOMY_SYSTEM,
+                PYTHON_ENABLED,
 
                 LAST_BOOLEAN_CONFIG /* this must be the last one */
         };
@@ -71,6 +72,9 @@ namespace ConfigManager {
 		DEFAULT_PRIORITY,
 		MAP_AUTHOR,
 		CONFIG_FILE,
+		PYTHON_HOME,
+		PYTHON_MODULE_PATH,
+		PYTHON_ENTRY,
 
 		LAST_STRING_CONFIG /* this must be the last one */
 	};
