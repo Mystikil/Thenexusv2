@@ -218,15 +218,25 @@ class LuaScriptInterface {
 		static int luaAddEvent(lua_State* L);
 		static int luaStopEvent(lua_State* L);
 
-		static int luaSaveServer(lua_State* L);
-		static int luaCleanMap(lua_State* L);
+                static int luaSaveServer(lua_State* L);
+                static int luaCleanMap(lua_State* L);
 
-		static int luaIsInWar(lua_State* L);
+                static int luaIsInWar(lua_State* L);
 
-		static int luaGetWaypointPositionByName(lua_State* L);
+#if ENABLE_INSTANCING
+                static int luaCreateInstance(lua_State* L);
+                static int luaBindPlayer(lua_State* L);
+                static int luaBindParty(lua_State* L);
+                static int luaTeleportInto(lua_State* L);
+                static int luaCloseInstance(lua_State* L);
+                static int luaGetActiveInstances(lua_State* L);
+                static int luaPlayerLeaveInstance(lua_State* L);
+#endif
 
-		static int luaSendChannelMessage(lua_State* L);
-		static int luaSendGuildChannelMessage(lua_State* L);
+                static int luaGetWaypointPositionByName(lua_State* L);
+
+                static int luaSendChannelMessage(lua_State* L);
+                static int luaSendGuildChannelMessage(lua_State* L);
 
 		static int luaIsScriptsInterface(lua_State* L);
 

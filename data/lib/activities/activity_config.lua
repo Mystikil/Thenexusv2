@@ -11,6 +11,7 @@ local ActivityConfig = {
         name = "Forgotten Catacombs",
         type = "solo",
         difficulty = "Normal",
+        mapName = "catacombs_template",
         unlock = {
             storage = 51001,
             questStorages = { 61010 },
@@ -40,6 +41,22 @@ local ActivityConfig = {
         features = { housing = true, npcs = true, quests = true },
     },
 
+    -- Public test instance
+    [2] = {
+        kind = "instance",
+        id = 2,
+        name = "Free Travel Grounds",
+        type = "solo",
+        difficulty = "Training",
+        bindSeconds = 0,
+        expRate = 1.0,
+        lootRate = 1.0,
+        entryPos = { x = 1005, y = 1020, z = 7 },
+        exitPos = { x = 1005, y = 1018, z = 7 },
+        mapName = "free_travel",
+        description = "A sandbox copy of the world for fast travel testing.",
+    },
+
     -- Example Dungeon
     [101] = {
         kind = "dungeon",
@@ -47,6 +64,7 @@ local ActivityConfig = {
         name = "The Ember Depths",
         type = "solo",
         difficulty = "Heroic",
+        mapName = "ember_depths_template",
         unlock = {
             storage = 51101,
             questStorages = { 61101, 61102 },

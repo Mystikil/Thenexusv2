@@ -29,4 +29,12 @@ closeInstance(uid)
 getActiveInstances()
 ```
 
+### Map templates and free-travel sandbox
+
+Instances can now load dedicated map templates from the `data/world/` directory by supplying a `mapName` in the Lua `cfg` table.
+The engine automatically appends the `.otbm` extension when needed, re-using already loaded templates when multiple runs share
+the same map. The default `ActivityConfig` ships with a "Free Travel Grounds" entry (`id = 2`) that teleports players into a
+lightweight sandbox instance for traversal testing. Use the existing talk actions (`!instance list`, `!instance id 2`) to hop in
+and verify map assignments without additional wiring.
+
 Once the remaining TODO blocks in the C++ layer are completed the Lua helpers can be extended to cover more elaborate dungeon workflows (cooldowns, matchmaking, matchmaking UI, etc.).
