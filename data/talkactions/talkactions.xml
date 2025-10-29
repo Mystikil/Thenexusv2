@@ -46,6 +46,7 @@
 	<talkaction words="!kills" script="kills.lua" />
 	<talkaction words="!online;/online" script="online.lua" />
 	<talkaction words="!serverinfo" script="server_info.lua" />
+	<talkaction words="!evolution" script="item_evolution_info.lua" />
 
 	<!-- test talkactions -->
 	<talkaction words="!z" separator=" " script="magic_effect.lua" />

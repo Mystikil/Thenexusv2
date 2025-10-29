@@ -18,6 +18,7 @@
 #include "inbox.h"
 #include "iologindata.h"
 #include "iomapserialize.h"
+#include "itemevolution.h"
 #include "luavariant.h"
 #include "matrixarea.h"
 #include "monster.h"
@@ -2679,7 +2680,8 @@ void LuaScriptInterface::registerFunctions() {
 	registerMethod(L, "Player", "openChannel", LuaScriptInterface::luaPlayerOpenChannel);
 	registerMethod(L, "Player", "closeChannel", LuaScriptInterface::luaPlayerCloseChannel);
 
-	registerMethod(L, "Player", "getSlotItem", LuaScriptInterface::luaPlayerGetSlotItem);
+        registerMethod(L, "Player", "getSlotItem", LuaScriptInterface::luaPlayerGetSlotItem);
+        registerMethod(L, "Player", "getEvolutionItemProgress", LuaScriptInterface::luaPlayerGetEvolutionItemProgress);
 
 	registerMethod(L, "Player", "getParty", LuaScriptInterface::luaPlayerGetParty);
 
@@ -9595,28 +9597,65 @@ int LuaScriptInterface::luaPlayerCloseChannel(lua_State* L) {
 }
 
 int LuaScriptInterface::luaPlayerGetSlotItem(lua_State* L) {
-	// player:getSlotItem(slot)
-	const Player* player = lua::getUserdata<const Player>(L, 1);
-	if (!player) {
-		lua_pushnil(L);
-		return 1;
-	}
+        // player:getSlotItem(slot)
+        const Player* player = lua::getUserdata<const Player>(L, 1);
+        if (!player) {
+                lua_pushnil(L);
+                return 1;
+        }
 
-	uint32_t slot = lua::getNumber<uint32_t>(L, 2);
-	Thing* thing = player->getThing(slot);
-	if (!thing) {
-		lua_pushnil(L);
-		return 1;
-	}
+        uint32_t slot = lua::getNumber<uint32_t>(L, 2);
+        Thing* thing = player->getThing(slot);
+        if (!thing) {
+                lua_pushnil(L);
+                return 1;
+        }
 
-	Item* item = thing->getItem();
-	if (item) {
-		lua::pushUserdata(L, item);
-		lua::setItemMetatable(L, -1, item);
-	} else {
-		lua_pushnil(L);
-	}
-	return 1;
+        Item* item = thing->getItem();
+        if (item) {
+                lua::pushUserdata(L, item);
+                lua::setItemMetatable(L, -1, item);
+        } else {
+                lua_pushnil(L);
+        }
+        return 1;
+}
+
+int LuaScriptInterface::luaPlayerGetEvolutionItemProgress(lua_State* L) {
+        // player:getEvolutionItemProgress(slot)
+        Player* player = lua::getUserdata<Player>(L, 1);
+        if (!player) {
+                lua_pushnil(L);
+                return 1;
+        }
+
+        const slots_t slot = lua::getNumber<slots_t>(L, 2);
+        Item* item = player->getInventoryItem(slot);
+        if (!item) {
+                lua_pushnil(L);
+                return 1;
+        }
+
+        ItemEvolution::EvolutionProgress progress;
+        if (!g_itemEvolution.getProgressInfo(player, item, slot, progress)) {
+                lua_pushnil(L);
+                return 1;
+        }
+
+        lua_createtable(L, 0, 0);
+        setField(L, "itemName", progress.itemName);
+        setField(L, "category", progress.categoryName);
+        setField(L, "rankText", progress.rankText);
+        setField(L, "stage", static_cast<lua_Number>(progress.stage));
+        setField(L, "maxStage", static_cast<lua_Number>(progress.maxStage));
+        setField(L, "stageCount", static_cast<lua_Number>(progress.stageCount));
+        setField(L, "experience", static_cast<lua_Number>(progress.experience));
+        setField(L, "currentThreshold", static_cast<lua_Number>(progress.currentThreshold));
+        setField(L, "nextThreshold", static_cast<lua_Number>(progress.nextThreshold));
+        lua_pushboolean(L, progress.atMaxStage);
+        lua_setfield(L, -2, "atMaxStage");
+        setField(L, "slot", static_cast<lua_Number>(slot));
+        return 1;
 }
 
 int LuaScriptInterface::luaPlayerGetParty(lua_State* L) {
