@@ -137,12 +137,19 @@ void ItemEvolution::onArmorHit(Player* player, int32_t damage) const {
                 return;
         }
 
-        Item* armor = player->getInventoryItem(CONST_SLOT_ARMOR);
-        if (!armor) {
-                return;
-        }
+        for (const slots_t slot : ARMOR_EVOLUTION_SLOTS) {
+                Item* armorPiece = player->getInventoryItem(slot);
+                if (!armorPiece) {
+                        continue;
+                }
 
-        addExperience(player, armor, Category::ARMOR, 0);
+                const ItemType& type = Item::items[armorPiece->getID()];
+                if (type.armor == 0 && !armorPiece->hasAttribute(ITEM_ATTRIBUTE_ARMOR)) {
+                        continue;
+                }
+
+                addExperience(player, armorPiece, Category::ARMOR, 0);
+        }
 }
 
 void ItemEvolution::modifyDamage(Player* player, Item* item, CombatDamage& damage) const {
@@ -236,8 +243,10 @@ std::string ItemEvolution::getPlayerTitle(const Player* player) const {
         if (Item* rightHand = player->getInventoryItem(CONST_SLOT_RIGHT)) {
                 considerItem(rightHand, mapWeaponType(rightHand->getWeaponType()));
         }
-        if (Item* armor = player->getInventoryItem(CONST_SLOT_ARMOR)) {
-                considerItem(armor, Category::ARMOR);
+        for (const slots_t slot : ARMOR_EVOLUTION_SLOTS) {
+                if (Item* armorPiece = player->getInventoryItem(slot)) {
+                        considerItem(armorPiece, Category::ARMOR);
+                }
         }
 
         const Item* shield;
