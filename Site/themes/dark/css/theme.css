@@ -1,0 +1,19 @@
+body {
+    background: var(--brand-bg);
+    color: var(--brand-text);
+}
+
+a {
+    color: var(--brand-color);
+}
+
+a:hover {
+    color: var(--brand-accent);
+}
+
+header.site-header,
+main.site-content,
+footer.site-footer {
+    background: var(--brand-surface);
+    color: var(--brand-text);
+}

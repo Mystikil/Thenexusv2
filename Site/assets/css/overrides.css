@@ -1,0 +1,65 @@
+:root{
+  --nx-bg: #0c0f14;
+  --nx-surface: #141a22;
+  --nx-text: #e6edf5;       /* bright text */
+  --nx-muted: #b6c2d0;      /* muted text */
+  --nx-primary: #58a6ff;    /* link/button */
+  --nx-danger: #ff6b6b;
+  --nx-warning: #f6c36b;
+  --nx-success: #2dcf9a;
+}
+
+/* Global readable text */
+html,body{ color:var(--nx-text)!important; background:var(--nx-bg)!important; }
+p,li,dt,dd,small,span,th,td,label,legend{ color:var(--nx-text)!important; }
+.text-muted,.form-text{ color:var(--nx-muted)!important; }
+
+/* Containers */
+.card,.dropdown-menu,.navbar,.offcanvas,.modal-content,.list-group-item{
+  background: var(--nx-surface)!important;
+  color: var(--nx-text)!important;
+  border: 1px solid rgba(255,255,255,.08)!important;
+}
+
+/* Headings */
+h1,h2,h3,h4,h5,h6{ color:var(--nx-text)!important; }
+
+/* Links & nav */
+a{ color:var(--nx-primary)!important; }
+a:hover{ color:#4a92f0!important; }
+.nav-link,.dropdown-item{ color:var(--nx-text)!important; }
+.nav-link:hover,.dropdown-item:hover{ background: rgba(255,255,255,.06)!important; }
+
+/* Forms */
+.form-control,.form-select,.form-check-input,.input-group-text{
+  background:#0f141b!important;
+  color:var(--nx-text)!important;
+  border:1px solid rgba(255,255,255,.12)!important;
+}
+.form-control::placeholder{ color:#94a3b8!important; }
+
+/* Tables */
+.table{ color:var(--nx-text)!important; }
+.table thead th{ color:var(--nx-muted)!important; }
+
+/* Buttons */
+.btn-primary{
+  --bs-btn-bg: var(--nx-primary);
+  --bs-btn-border-color: var(--nx-primary);
+  --bs-btn-hover-bg: #4a92f0;
+  --bs-btn-hover-border-color:#4a92f0;
+  --bs-btn-color:#0b1220;
+}
+.btn-outline-primary{ --bs-btn-color:var(--nx-primary); --bs-btn-border-color:var(--nx-primary); }
+
+/* Widgets */
+.widget, .nx-card { background:var(--nx-surface)!important; color:var(--nx-text)!important; }
+
+/* Ensure sidebars and main box do not apply low-opacity overlays */
+#left .card, #right .card, main .card{ opacity:1!important; }
+
+body.contrast-safe, body.contrast-safe *{
+  color: #ffffff !important;
+  background: #0b0f14 !important;
+  border-color: rgba(255,255,255,.18) !important;
+}

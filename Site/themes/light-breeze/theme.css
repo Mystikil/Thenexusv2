@@ -1,0 +1,83 @@
+body[data-theme="light-breeze"] {
+  --nx-bg: #f5f8fc;
+  --nx-bg-soft: #ecf2fb;
+  --nx-surface: #ffffff;
+  --nx-text: #1f2a3d;
+  --nx-muted: #63738d;
+  --nx-primary: #3b82f6;
+  --nx-accent: #0ea5e9;
+  --nx-success: #16a34a;
+  --nx-warning: #f59e0b;
+  --nx-danger: #ef4444;
+  --nx-glow: 0 16px 40px rgba(59, 130, 246, .18);
+  --nx-card-border: 1px solid rgba(15, 23, 42, .08);
+  --nx-radius: 16px;
+  background:
+    radial-gradient(680px 420px at 10% 20%, rgba(14, 165, 233, .12), transparent),
+    radial-gradient(520px 360px at 90% 10%, rgba(59, 130, 246, .14), transparent),
+    var(--nx-bg);
+  color: var(--nx-text);
+}
+
+body[data-theme="light-breeze"] a {
+  color: var(--nx-primary);
+}
+
+body[data-theme="light-breeze"] .container-page {
+  max-width: 1200px;
+}
+
+body[data-theme="light-breeze"] .card,
+body[data-theme="light-breeze"] .nx-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .98), rgba(244, 249, 255, .96));
+  border: var(--nx-card-border);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, .08);
+}
+
+body[data-theme="light-breeze"] .card-header {
+  background: rgba(236, 242, 251, .75);
+  border-bottom: 1px solid rgba(15, 23, 42, .08);
+}
+
+body[data-theme="light-breeze"] .navbar,
+body[data-theme="light-breeze"] .dropdown-menu {
+  background: rgba(255, 255, 255, .92);
+  border: 1px solid rgba(15, 23, 42, .08);
+  backdrop-filter: blur(12px);
+}
+
+body[data-theme="light-breeze"] .form-control,
+body[data-theme="light-breeze"] .form-select {
+  background: rgba(246, 249, 255, .9);
+  border: 1px solid rgba(100, 116, 139, .24);
+  color: var(--nx-text);
+}
+
+body[data-theme="light-breeze"] .form-control:focus,
+body[data-theme="light-breeze"] .form-select:focus {
+  border-color: rgba(59, 130, 246, .6);
+  box-shadow: 0 0 0 .25rem rgba(59, 130, 246, .25);
+}
+
+body[data-theme="light-breeze"] .nx-status-indicator--online {
+  color: #15803d;
+  text-shadow: 0 0 1rem rgba(22, 163, 74, .35);
+}
+
+body[data-theme="light-breeze"] .nx-status-indicator--offline {
+  color: #dc2626;
+  text-shadow: 0 0 1rem rgba(239, 68, 68, .28);
+}
+
+body[data-theme="light-breeze"] .account-form,
+body[data-theme="light-breeze"] .account-theme-placeholder,
+body[data-theme="light-breeze"] .account-profile {
+  background: rgba(255, 255, 255, .96);
+  border: 1px solid rgba(15, 23, 42, .08);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .08);
+}
+
+body[data-theme="light-breeze"] .form-help,
+body[data-theme="light-breeze"] .form-help-list {
+  color: rgba(99, 115, 141, .9);
+}

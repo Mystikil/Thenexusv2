@@ -1,0 +1,11 @@
+body {
+    background: var(--brand-bg);
+}
+
+a {
+    color: var(--brand-color);
+}
+
+a:hover {
+    color: var(--brand-accent);
+}
