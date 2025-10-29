@@ -20,6 +20,10 @@
 #include "scheduler.h"
 #include "storeinbox.h"
 
+#ifdef WITH_PYTHON
+#include "python/PythonEngine.h"
+#endif
+
 extern CreatureEvents* g_creatureEvents;
 extern Chat* g_chat;
 
@@ -258,11 +262,11 @@ void ProtocolGame::logout(bool displayEffect, bool forced) {
 		return;
 	}
 
-	if (!player->isRemoved()) {
-		if (!forced) {
-			if (!player->isAccessPlayer()) {
-				if (player->getTile()->hasFlag(TILESTATE_NOLOGOUT)) {
-					player->sendCancelMessage(RETURNVALUE_YOUCANNOTLOGOUTHERE);
+        if (!player->isRemoved()) {
+                if (!forced) {
+                        if (!player->isAccessPlayer()) {
+                                if (player->getTile()->hasFlag(TILESTATE_NOLOGOUT)) {
+                                        player->sendCancelMessage(RETURNVALUE_YOUCANNOTLOGOUTHERE);
 					return;
 				}
 
@@ -280,13 +284,19 @@ void ProtocolGame::logout(bool displayEffect, bool forced) {
 		}
 
 		if (displayEffect && !player->isDead() && !player->isInGhostMode()) {
-			g_game.addMagicEffect(player->getPosition(), CONST_ME_POFF);
-		}
-	}
+                        g_game.addMagicEffect(player->getPosition(), CONST_ME_POFF);
+                }
+        }
 
-	disconnect();
+#ifdef WITH_PYTHON
+        if (!player->isRemoved() && ConfigManager::getBoolean(ConfigManager::PYTHON_ENABLED) && PythonEngine::instance().isReady()) {
+                PythonEngine::instance().onPlayerLogout(player->getGUID(), player->getName());
+        }
+#endif
 
-	g_game.removeCreature(player);
+        disconnect();
+
+        g_game.removeCreature(player);
 }
 
 void ProtocolGame::onRecvFirstMessage(NetworkMessage& msg) {

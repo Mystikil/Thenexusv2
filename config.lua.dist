@@ -107,6 +107,12 @@ checkDuplicateStorageKeys = false
 enableReputationSystem = true
 enableEconomySystem = true
 
+-- Python integration
+pythonEnabled = false
+pythonHome = ""
+pythonModulePath = "data/python"
+pythonEntry = "bootstrap.py"
+
 -- VIP and Depot limits
 -- NOTE: you can set custom limits per group in data/XML/groups.xml
 vipFreeLimit = 20

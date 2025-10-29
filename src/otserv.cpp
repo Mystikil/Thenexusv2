@@ -25,6 +25,10 @@
 #include "utils/StartupProbe.h"
 #include "world/WorldPressureManager.hpp"
 
+#ifdef WITH_PYTHON
+#include "python/PythonEngine.h"
+#endif
+
 #include <algorithm>
 #include <array>
 #include <cctype>
@@ -547,6 +551,17 @@ namespace {
         economyEnabled = getBoolean(ConfigManager::ENABLE_ECONOMY_SYSTEM);
         StartupProbe::mark("config");
 
+#ifdef WITH_PYTHON
+        if (getBoolean(ConfigManager::PYTHON_ENABLED)) {
+            const std::string& pythonHome = getString(ConfigManager::PYTHON_HOME);
+            const std::string& pythonModulePath = getString(ConfigManager::PYTHON_MODULE_PATH);
+            const std::string& pythonEntry = getString(ConfigManager::PYTHON_ENTRY);
+            if (!PythonEngine::instance().init(pythonHome, pythonModulePath, pythonEntry)) {
+                Logger::instance().warn("[Python] Failed to initialize embedded runtime; continuing without Python.");
+            }
+        }
+#endif
+
         std::string rerr;
         RankSystem::get().loadFromJson("data/monster_ranks.json", rerr);
         if (!rerr.empty()) {
@@ -748,6 +763,11 @@ namespace {
 
         g_game.start(services);
         g_game.setGameState(GAME_STATE_NORMAL);
+#ifdef WITH_PYTHON
+        if (getBoolean(ConfigManager::PYTHON_ENABLED) && PythonEngine::instance().isReady()) {
+            PythonEngine::instance().onServerStart();
+        }
+#endif
         StartupProbe::mark(nullptr);
         g_loaderSignal.notify_all();
     }
@@ -785,6 +805,13 @@ bool startServer() {
         g_databaseTasks.shutdown();
         g_dispatcher.shutdown();
     }
+
+#ifdef WITH_PYTHON
+    if (PythonEngine::instance().isReady()) {
+        PythonEngine::instance().onServerStop();
+        PythonEngine::instance().shutdown();
+    }
+#endif
 
     g_scheduler.join();
     g_databaseTasks.join();

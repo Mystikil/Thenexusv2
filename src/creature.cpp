@@ -14,6 +14,10 @@
 #include "scheduler.h"
 #include "spectators.h"
 
+#ifdef WITH_PYTHON
+#include "python/PythonEngine.h"
+#endif
+
 double Creature::speedA = 857.36;
 double Creature::speedB = 261.29;
 double Creature::speedC = -4795.01;
@@ -495,12 +499,24 @@ void Creature::onDeath() {
 		}
 	}
 
-	bool droppedCorpse = dropCorpse(lastHitCreature, mostDamageCreature, lastHitUnjustified, mostDamageUnjustified);
-	death(lastHitCreature);
+        bool droppedCorpse = dropCorpse(lastHitCreature, mostDamageCreature, lastHitUnjustified, mostDamageUnjustified);
+        death(lastHitCreature);
 
-	if (master) {
-		setMaster(nullptr);
-	}
+#ifdef WITH_PYTHON
+        if (ConfigManager::getBoolean(ConfigManager::PYTHON_ENABLED) && PythonEngine::instance().isReady()) {
+                std::string killerName;
+                if (lastHitCreatureMaster) {
+                        killerName = lastHitCreatureMaster->getNameDescription();
+                } else if (lastHitCreature) {
+                        killerName = lastHitCreature->getNameDescription();
+                }
+                PythonEngine::instance().onCreatureDeath(killerName, getNameDescription());
+        }
+#endif
+
+        if (master) {
+                setMaster(nullptr);
+        }
 
 	if (droppedCorpse) {
 		g_game.removeCreature(this, false);

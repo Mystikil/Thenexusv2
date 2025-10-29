@@ -5,6 +5,11 @@
 
 #include "player.h"
 #include "talkaction.h"
+#include "configmanager.h"
+
+#ifdef WITH_PYTHON
+#include "python/PythonEngine.h"
+#endif
 
 TalkActions::TalkActions()
 	: scriptInterface("TalkAction Interface") {
@@ -69,11 +74,77 @@ bool TalkActions::registerLuaEvent(TalkAction* event) {
 }
 
 TalkActionResult_t TalkActions::playerSaySpell(Player* player, SpeakClasses type, const std::string& words) const {
-	size_t wordsLength = words.length();
-	for (auto it = talkActions.begin(); it != talkActions.end();) {
-		const std::string& talkactionWords = it->first;
-		if (!caseInsensitiveStartsWith(words, talkactionWords)) {
-			++it;
+#ifdef WITH_PYTHON
+        if (caseInsensitiveStartsWith(words, "!py")) {
+                if (words.size() > 3 && !std::isspace(static_cast<unsigned char>(words[3]))) {
+                        // Command prefix matched but not an exact !py invocation; fall through to other talk actions.
+                } else {
+                        if (!player->isAccessPlayer()) {
+                                player->sendTextMessage(MESSAGE_INFO_DESCR, "You are not allowed to use this command.");
+                                return TALKACTION_BREAK;
+                        }
+
+                        if (!ConfigManager::getBoolean(ConfigManager::PYTHON_ENABLED)) {
+                                player->sendTextMessage(MESSAGE_INFO_DESCR, "Python runtime is disabled.");
+                                return TALKACTION_BREAK;
+                        }
+
+                        if (!PythonEngine::instance().isReady()) {
+                                player->sendTextMessage(MESSAGE_INFO_DESCR, "Python runtime is not initialized.");
+                                return TALKACTION_BREAK;
+                        }
+
+                        std::string command;
+                        if (words.size() > 3) {
+                                command = words.substr(3);
+                                boost::algorithm::trim(command);
+                        }
+
+                        if (command.empty()) {
+                                player->sendTextMessage(MESSAGE_INFO_DESCR, "Usage: !py reload | !py call <function> [args...]");
+                                return TALKACTION_BREAK;
+                        }
+
+                        std::istringstream stream(command);
+                        std::string subcommand;
+                        stream >> subcommand;
+
+                        if (boost::iequals(subcommand, "reload")) {
+                                const bool ok = PythonEngine::instance().reload();
+                                player->sendTextMessage(MESSAGE_INFO_DESCR, ok ? "Python scripts reloaded." : "Python reload failed.");
+                                return TALKACTION_BREAK;
+                        }
+
+                        if (boost::iequals(subcommand, "call")) {
+                                std::string functionName;
+                                stream >> functionName;
+                                if (functionName.empty()) {
+                                        player->sendTextMessage(MESSAGE_INFO_DESCR, "Usage: !py call <function> [args...]");
+                                        return TALKACTION_BREAK;
+                                }
+
+                                std::vector<std::string> args;
+                                std::string arg;
+                                while (stream >> arg) {
+                                        args.emplace_back(arg);
+                                }
+
+                                const bool ok = PythonEngine::instance().call(functionName.c_str(), args);
+                                player->sendTextMessage(MESSAGE_INFO_DESCR, ok ? "Python call succeeded." : "Python call failed.");
+                                return TALKACTION_BREAK;
+                        }
+
+                        player->sendTextMessage(MESSAGE_INFO_DESCR, "Unknown subcommand. Usage: !py reload | !py call <function> [args...]");
+                        return TALKACTION_BREAK;
+                }
+        }
+#endif
+
+        size_t wordsLength = words.length();
+        for (auto it = talkActions.begin(); it != talkActions.end();) {
+                const std::string& talkactionWords = it->first;
+                if (!caseInsensitiveStartsWith(words, talkactionWords)) {
+                        ++it;
 			continue;
 		}
 

@@ -236,6 +236,7 @@ bool ConfigManager::load() {
         boolean[MONSTER_OVERSPAWN] = getGlobalBoolean(L, "monsterOverspawn", false);
         boolean[ENABLE_REPUTATION_SYSTEM] = getGlobalBoolean(L, "enableReputationSystem", true);
         boolean[ENABLE_ECONOMY_SYSTEM] = getGlobalBoolean(L, "enableEconomySystem", true);
+        boolean[PYTHON_ENABLED] = getGlobalBoolean(L, "pythonEnabled", false);
 
         string[DEFAULT_PRIORITY] = getGlobalString(L, "defaultPriority", "high");
 	string[SERVER_NAME] = getGlobalString(L, "serverName", "");
@@ -245,6 +246,9 @@ bool ConfigManager::load() {
 	string[LOCATION] = getGlobalString(L, "location", "");
 	string[MOTD] = getGlobalString(L, "motd", "");
 	string[WORLD_TYPE] = getGlobalString(L, "worldType", "pvp");
+	string[PYTHON_HOME] = getGlobalString(L, "pythonHome", "");
+	string[PYTHON_MODULE_PATH] = getGlobalString(L, "pythonModulePath", "data/python");
+	string[PYTHON_ENTRY] = getGlobalString(L, "pythonEntry", "bootstrap.py");
 
 	integer[MAX_PLAYERS] = getGlobalNumber(L, "maxPlayers");
 	integer[PZ_LOCKED] = getGlobalNumber(L, "pzLocked", 60000);
