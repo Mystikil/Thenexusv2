@@ -67,12 +67,19 @@ namespace {
                                 int stageIndex = lua_gettop(L);
                                 ConfigManager::EvolutionStageConfig stage;
                                 stage.xpRequired = lua::getField<uint32_t>(L, stageIndex, "xp", 0);
+                                lua_pop(L, 1);
                                 stage.attackBonus = lua::getField<int32_t>(L, stageIndex, "attack", 0);
+                                lua_pop(L, 1);
                                 stage.defenseBonus = lua::getField<int32_t>(L, stageIndex, "defense", 0);
+                                lua_pop(L, 1);
                                 stage.extraDefenseBonus = lua::getField<int32_t>(L, stageIndex, "extraDefense", 0);
+                                lua_pop(L, 1);
                                 stage.armorBonus = lua::getField<int32_t>(L, stageIndex, "armor", 0);
+                                lua_pop(L, 1);
                                 stage.wandMinBonus = lua::getField<int32_t>(L, stageIndex, "minMagic", 0);
+                                lua_pop(L, 1);
                                 stage.wandMaxBonus = lua::getField<int32_t>(L, stageIndex, "maxMagic", static_cast<int32_t>(stage.wandMinBonus));
+                                lua_pop(L, 1);
                                 stages.emplace_back(stage);
                         }
                         lua_pop(L, 1);
@@ -99,6 +106,7 @@ namespace {
                 }
 
                 weaponEvolutionConfig.enabled = lua::getField<bool>(L, -1, "enabled", false);
+                lua_pop(L, 1);
 
                 lua_getfield(L, -1, "xpPerUse");
                 if (lua_istable(L, -1)) {
