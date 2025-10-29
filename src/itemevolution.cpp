@@ -5,6 +5,9 @@
 #include <algorithm>
 #include <string_view>
 #include <type_traits>
+#include <vector>
+
+#include <fmt/format.h>
 
 #include "combat.h"
 #include "configmanager.h"
@@ -279,6 +282,14 @@ void ItemEvolution::addExperience(Player* player, Item* item, Category category,
         if (newStage != oldStage) {
                 applyStage(player, item, category, *categoryConfig, newStage);
         }
+
+        if (player && gain > 0) {
+                sendExperienceGainMessage(player, item, *categoryConfig, experience, gain, newStage);
+        }
+
+        if (player && newStage != oldStage) {
+                sendStageAdvanceMessage(player, item, category, *categoryConfig, newStage);
+        }
 }
 
 uint64_t ItemEvolution::getExperience(Item* item) const {
@@ -517,6 +528,127 @@ std::string ItemEvolution::buildEvolutionName(Item* item, Category category, con
                 fullName += ' ' + suffix;
         }
         return fullName;
+}
+
+void ItemEvolution::sendExperienceGainMessage(Player* player, Item* item, const ConfigManager::EvolutionCategoryConfig& categoryConfig, uint64_t experience, uint32_t gain, uint32_t stage) const {
+        if (!player || !item || gain == 0) {
+                return;
+        }
+
+        std::string itemName = item->getName();
+        if (itemName.empty()) {
+                itemName = Item::items[item->getID()].name;
+        }
+
+        std::string progress;
+        if (!categoryConfig.stages.empty()) {
+                if (stage + 1 < categoryConfig.stages.size()) {
+                        const uint64_t nextThreshold = categoryConfig.stages[stage + 1].xpRequired;
+                        progress = fmt::format(" ({}/{})", experience, nextThreshold);
+                } else {
+                        progress = fmt::format(" ({}/MAX)", experience);
+                }
+        }
+
+        player->sendTextMessage(MESSAGE_INFO_DESCR, fmt::format("Your {:s} gained {:d} evolution experience{:s}.", itemName, gain, progress));
+}
+
+void ItemEvolution::sendStageAdvanceMessage(Player* player, Item* item, Category category, const ConfigManager::EvolutionCategoryConfig& categoryConfig, uint32_t stage) const {
+        if (!player || !item || stage == 0 || stage >= categoryConfig.stages.size()) {
+                return;
+        }
+
+        const auto& stageConfig = categoryConfig.stages[stage];
+        const auto& globalConfig = ConfigManager::getWeaponEvolutionConfig();
+
+        std::string tierName;
+        if (!globalConfig.names.tierNames.empty()) {
+                const size_t index = std::min<size_t>(stage - 1, globalConfig.names.tierNames.size() - 1);
+                tierName = globalConfig.names.tierNames[index];
+        }
+
+        std::string rankText;
+        if (!tierName.empty()) {
+                rankText = fmt::format("rank {:d} ({:s})", stage, tierName);
+        } else {
+                rankText = fmt::format("rank {:d}", stage);
+        }
+
+        std::string baseName = getStoredValue<std::string>(item, EVOLUTION_BASE_NAME_KEY, Item::items[item->getID()].name);
+        if (baseName.empty()) {
+                baseName = Item::items[item->getID()].name;
+        }
+
+        std::vector<std::string> statParts;
+        auto pushStat = [&statParts](std::string label, int32_t baseValue, int32_t bonusValue) {
+                const int32_t finalValue = baseValue + bonusValue;
+                if (finalValue != 0 || bonusValue != 0) {
+                        statParts.emplace_back(fmt::format("{:s} {:d}", label, finalValue));
+                }
+        };
+
+        switch (category) {
+                case Category::MELEE:
+                case Category::DISTANCE:
+                case Category::WAND: {
+                        const int32_t baseAttack = getStoredValue<int32_t>(item, EVOLUTION_BASE_ATTACK_KEY, Item::items[item->getID()].attack);
+                        pushStat("Attack", baseAttack, stageConfig.attackBonus);
+
+                        const int32_t baseDefense = getStoredValue<int32_t>(item, EVOLUTION_BASE_DEFENSE_KEY, Item::items[item->getID()].defense);
+                        pushStat("Defense", baseDefense, stageConfig.defenseBonus);
+
+                        const int32_t baseExtraDefense = getStoredValue<int32_t>(item, EVOLUTION_BASE_EXTRA_DEFENSE_KEY, Item::items[item->getID()].extraDefense);
+                        pushStat("Extra defense", baseExtraDefense, stageConfig.extraDefenseBonus);
+
+                        if (category == Category::WAND) {
+                                int32_t minBonus = stageConfig.wandMinBonus;
+                                int32_t maxBonus = stageConfig.wandMaxBonus;
+                                if (maxBonus < minBonus) {
+                                        std::swap(maxBonus, minBonus);
+                                }
+                                if (minBonus != 0 || maxBonus != 0) {
+                                        statParts.emplace_back(fmt::format("Magic damage bonus {:d} to {:d}", minBonus, maxBonus));
+                                }
+                        }
+                        break;
+                }
+
+                case Category::SHIELD: {
+                        const int32_t baseDefense = getStoredValue<int32_t>(item, EVOLUTION_BASE_DEFENSE_KEY, Item::items[item->getID()].defense);
+                        pushStat("Defense", baseDefense, stageConfig.defenseBonus);
+
+                        const int32_t baseExtraDefense = getStoredValue<int32_t>(item, EVOLUTION_BASE_EXTRA_DEFENSE_KEY, Item::items[item->getID()].extraDefense);
+                        pushStat("Extra defense", baseExtraDefense, stageConfig.extraDefenseBonus);
+                        break;
+                }
+
+                case Category::ARMOR: {
+                        const int32_t baseArmor = getStoredValue<int32_t>(item, EVOLUTION_BASE_ARMOR_KEY, Item::items[item->getID()].armor);
+                        pushStat("Armor", baseArmor, stageConfig.armorBonus);
+                        break;
+                }
+
+                case Category::LAST:
+                        break;
+        }
+
+        std::string statsText;
+        if (!statParts.empty()) {
+                        statsText = "Stats: ";
+                        for (size_t index = 0; index < statParts.size(); ++index) {
+                                if (index > 0) {
+                                        statsText += ", ";
+                                }
+                                statsText += statParts[index];
+                        }
+        }
+
+        std::string message = fmt::format("Your {:s} advanced to {:s}. New name: {:s}.", baseName, rankText, item->getName());
+        if (!statsText.empty()) {
+                message += ' ' + statsText;
+        }
+
+        player->sendTextMessage(MESSAGE_EVENT_ADVANCE, message);
 }
 
 bool ItemEvolution::findEquippedSlot(const Player* player, const Item* item, slots_t& slotOut) const {

@@ -33,6 +33,8 @@ class ItemEvolution {
                 void updateItemName(Item* item, Category category, const ConfigManager::EvolutionCategoryConfig& categoryConfig, uint32_t stage) const;
                 std::string buildEvolutionName(Item* item, Category category, const ConfigManager::EvolutionCategoryConfig& categoryConfig, uint32_t stage) const;
                 bool findEquippedSlot(const Player* player, const Item* item, slots_t& slotOut) const;
+                void sendExperienceGainMessage(Player* player, Item* item, const ConfigManager::EvolutionCategoryConfig& categoryConfig, uint64_t experience, uint32_t gain, uint32_t stage) const;
+                void sendStageAdvanceMessage(Player* player, Item* item, Category category, const ConfigManager::EvolutionCategoryConfig& categoryConfig, uint32_t stage) const;
 };
 
 extern ItemEvolution g_itemEvolution;
