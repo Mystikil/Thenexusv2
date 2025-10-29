@@ -730,6 +730,7 @@ class LuaScriptInterface {
 		static int luaPlayerCloseChannel(lua_State* L);
 
 		static int luaPlayerGetSlotItem(lua_State* L);
+		static int luaPlayerGetEvolutionItemProgress(lua_State* L);
 
 		static int luaPlayerGetParty(lua_State* L);
 
